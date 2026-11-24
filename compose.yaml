@@ -1,0 +1,33 @@
+x-app: &app
+  image: barin-zar:local
+  build: .
+  env_file: .env.docker
+  volumes:
+    - media:/var/www/html/storage/app
+  depends_on:
+    mysql:
+      condition: service_healthy
+
+services:
+  web:
+    <<: *app
+    ports:
+      - "127.0.0.1:8080:80"
+  scheduler:
+    <<: *app
+    volumes: []
+    command: ["php", "artisan", "schedule:work", "--no-interaction"]
+  mysql:
+    image: mysql:8.4
+    env_file: .env.docker
+    volumes:
+      - mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  media:
+  mysql:

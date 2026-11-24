@@ -1,0 +1,162 @@
+[
+  {
+    "id": 1,
+    "title": "بندانگشتی روشن",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Isolate the supplied piece on warm ivory matte paper. Center its complete silhouette in a square with 12% breathing room and soft contact shadow."
+  },
+  {
+    "id": 2,
+    "title": "بندانگشتی تیره",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Center the entire piece on midnight green velvet in a square crop. Use a broad strip reflection to separate the gold from the surface."
+  },
+  {
+    "id": 3,
+    "title": "حلقه از روبه‌رو",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use the supplied front photograph of the ring. Align the face straight to camera on a neutral matte ring stand."
+  },
+  {
+    "id": 4,
+    "title": "حلقه سه‌رخ",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use the matching three-quarter reference. Show the band and face together under a large diffused key light."
+  },
+  {
+    "id": 5,
+    "title": "داخل حلقه",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Crop the supplied interior macro to the documented engraving. Keep every visible mark exactly as photographed."
+  },
+  {
+    "id": 6,
+    "title": "انگشتر روی دست",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Composite the ring onto an adult hand at the base of the finger. Match the supplied inner diameter to the finger and retain natural skin texture."
+  },
+  {
+    "id": 7,
+    "title": "دستبند روی مچ",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the bracelet on an adult wrist in a cream sleeve. Preserve the documented wrist-to-bracelet fit and visible link count."
+  },
+  {
+    "id": 8,
+    "title": "گردنبند روی مدل",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Fit the necklace to an adult collarbone above a black boat neckline. Follow the reference chain length and pendant scale."
+  },
+  {
+    "id": 9,
+    "title": "گوشواره روی مدل",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use a side crop of an adult ear with hair tucked back. Align the post to the lobe and use the supplied drop measurement."
+  },
+  {
+    "id": 10,
+    "title": "سنجاق روی لباس",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the brooch on a charcoal wool lapel. Match documented dimensions and pin orientation."
+  },
+  {
+    "id": 11,
+    "title": "آویز در نمای نزدیک",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Frame the pendant face and bail with the reference chain entering from the top. Use soft frontal fill."
+  },
+  {
+    "id": 12,
+    "title": "اتصال زنجیر",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Magnify three adjacent links from the supplied macro. Use even light to show the actual connection."
+  },
+  {
+    "id": 13,
+    "title": "پشت گوشواره",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use the provided rear view. Show the post and backing on neutral paper with a clean side shadow."
+  },
+  {
+    "id": 14,
+    "title": "قفل دستبند",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use the clasp reference in its photographed state; frame the release tab and nearby links tightly."
+  },
+  {
+    "id": 15,
+    "title": "بافت چکش‌کاری",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use grazing side light across the supplied macro of hammered metal. Preserve its actual surface pattern."
+  },
+  {
+    "id": 16,
+    "title": "نگین و پایه",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Crop the stone-setting reference so the actual stone and every visible prong remain sharply legible."
+  },
+  {
+    "id": 17,
+    "title": "نیم‌ست روی مدل",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place only the pieces in the supplied set on one adult model. Compose a three-quarter portrait with the jewellery in focus."
+  },
+  {
+    "id": 18,
+    "title": "ست در جعبه",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Arrange the referenced set in a plain open jewellery case. Maintain actual proportions and separate the pieces."
+  },
+  {
+    "id": 19,
+    "title": "مقایسه اندازه",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the piece alongside the supplied verified scale reference on a flat neutral surface; retain its original markings."
+  },
+  {
+    "id": 20,
+    "title": "پشت آویز",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use the rear photograph of the pendant. Light recessed features gently and retain its true outline."
+  },
+  {
+    "id": 21,
+    "title": "روی ابریشم",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Lay the piece across one soft fold of ivory silk with the metal clear of the deepest crease."
+  },
+  {
+    "id": 22,
+    "title": "روی سنگ",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the piece on pale travertine with calm lateral daylight and a restrained shadow."
+  },
+  {
+    "id": 23,
+    "title": "روی چوب گردو",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the piece on dark walnut with subtle grain running perpendicular to the chain."
+  },
+  {
+    "id": 24,
+    "title": "هدیه روز مادر",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Compose the supplied piece in an open gift box with an out-of-focus rose at the edge. Leave clear space on the left for campaign text."
+  },
+  {
+    "id": 25,
+    "title": "روز زن",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Show the piece worn by an adult woman in a tailored emerald jacket. Keep the crop on the jewellery with soft window light."
+  },
+  {
+    "id": 26,
+    "title": "جمعه سیاه",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Compose the piece on black satin under one broad rim light; leave a clean empty area for the offer."
+  },
+  {
+    "id": 27,
+    "title": "نوروز",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the piece on warm linen with blurred hyacinth in the far background and soft spring daylight."
+  },
+  {
+    "id": 28,
+    "title": "شب یلدا",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the jewellery in front of deep burgundy velvet with a distant blurred pomegranate accent."
+  },
+  {
+    "id": 29,
+    "title": "سالگرد",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the supplied piece in an open cream box beside an unmarked envelope. Use warm evening light."
+  },
+  {
+    "id": 30,
+    "title": "هدیه تولد",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Compose the piece on pale blue wrapping paper with a loose ribbon at the frame edge."
+  },
+  {
+    "id": 31,
+    "title": "استایل روزمره",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Show the piece on an adult model in a plain white shirt in indirect daylight. Crop close enough to read its shape."
+  },
+  {
+    "id": 32,
+    "title": "استایل رسمی",
+    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Show the piece with an adult model wearing a plain dark evening outfit. Use subtle studio lighting and a tight editorial crop."
+  }
+]
