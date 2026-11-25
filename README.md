@@ -63,18 +63,39 @@ php artisan serve
 
 ```sh
 docker compose up -d --build mysql web
-docker compose exec --user www-data web php artisan migrate --force --seed
 docker compose exec --user www-data web php artisan barin:admin manager@example.com
 docker compose up -d scheduler
 ```
 
-ویترین محلی در `http://localhost:8080` در دسترس است. برای سایت واقعی، migration را بدون `--seed` اجرا کنید مگر آنکه داده نمایشی بخواهید.
+ویترین محلی در `http://localhost:8080` در دسترس است. مقدار `BARIN_DB_SETUP=demo` در نمونه تنظیمات، جدول‌ها و کاتالوگ نمایشی را هنگام راه‌اندازی وب آماده می‌کند. فایل `.env.docker` روی میزبان، داده‌های MySQL در volume به نام `mysql` و بارگذاری‌ها در volume به نام `media` ذخیره می‌شوند. هنگام به‌روزرسانی، همین فایل و volumeها را استفاده کنید. پس از تغییر `.env.docker`، سرویس‌های وب و scheduler را با `docker compose up -d` دوباره ایجاد کنید. تغییر رمز در فایل، رمز کاربر یک دیتابیس MySQL از قبل ساخته‌شده را عوض نمی‌کند.
 
 ### دارکوب
 
 - ریشه مخزن را برای Build انتخاب کنید. پورت کانتینر وب `80` و مسیر بررسی سلامت `/up` است. پوشه `public/` ریشه Apache است.
-- اپ را با یک نسخه وب و دیتابیس MySQL خارجی راه‌اندازی کنید. مشخصات DB، `APP_ENV=production`، `APP_DEBUG=false`، `APP_URL` با HTTPS، `APP_KEY` ثابت و `LOG_CHANNEL=stderr` را در تنظیمات محیطی اپ بگذارید.
-- دیسک پایدار را روی `/var/www/html/storage/app` سوار کنید. پیوند `public/storage` بخشی از ایمیج است.
-- قبل از فعال کردن فروش، `php artisan migrate --force` و فرمان `barin:admin` را در کانتینر اجرا کنید. برای migrationهای بعدی نیز آن را یک‌بار در هر انتشار اجرا کنید.
+- یک سرویس MySQL جداگانه یا مدیریت‌شده به اپ متصل کنید. اگر MySQL را خودتان در کانتینر اجرا می‌کنید، دیسک داده را در همان سرویس روی `/var/lib/mysql` سوار کنید. برای فروشگاه موجود، نشانی همان دیتابیس را وارد کنید.
+- برای فایل تنظیمات، یک پارتیشن روی `/run/barinzar-config` سوار کنید و فایل `.env` را داخل آن بگذارید. دایرکتوری باید برای `www-data` قابل پیمایش و فایل برای آن قابل خواندن باشد. در صورت دسترسی، مالک فایل را `root:www-data` و مجوز را `0640` قرار دهید. متغیرهای واقعی محیط اجرا بر مقادیر فایل اولویت دارند. در صورت تغییر فایل، اپ را ری‌استارت کنید. می‌توانید به‌جای فایل، تمام تنظیمات را در متغیرهای محیط اجرای اپ ثبت کنید.
+- برای بارگذاری‌ها، پارتیشن جداگانه‌ای روی `/var/www/html/storage/app` سوار کنید. پیوند `public/storage` بخشی از ایمیج است.
+- راه‌اندازی خودکار دیتابیس با دستور پیش‌فرض ایمیج `apache2-foreground` اجرا می‌شود. برای راه‌اندازی خودکار روی دارکوب، در شروع از یک replica وب استفاده کنید. حالت `demo` در کاتالوگ خالی شش محصول، صفحه اصلی، راهنمای خرید و نرخ نمونه را یک‌بار اضافه می‌کند. نرخ نمونه برای ثبت سفارش در محیط production معتبر نیست. حالت `migrate` فقط migrationها را اجرا می‌کند. حالت `off` پیش‌فرض است و برای اجرای جداگانه `php artisan migrate --force` کاربرد دارد.
+- حساب مدیر را یک‌بار با `php artisan barin:admin manager@example.com` بسازید و همان ایمیل را در `BARIN_ADMIN_EMAIL` بگذارید.
 - برای نرخ خودکار، یک پردازش جدا با همان ایمیج، همان متغیرهای پایگاه داده و کلید، و دستور `php artisan schedule:work --no-interaction` بسازید. Scheduler فقط یک replica داشته باشد و برای نرخ‌گیری به دیسک تصاویر نیاز ندارد.
 - دامنه را روی وب‌اپ متصل کنید. برای قرار گرفتن پشت پراکسی HTTPS، در صورت نیاز `APP_TRUSTED_PROXIES` را با IP یا CIDR پراکسی‌های مورد اعتماد تنظیم کنید.
+
+نمونه `/run/barinzar-config/.env` روی دارکوب
+
+```dotenv
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://your-domain.example
+APP_KEY=base64:replace-with-your-existing-key
+LOG_CHANNEL=stderr
+DB_CONNECTION=mysql
+DB_HOST=your-internal-mysql-host
+DB_PORT=3306
+DB_DATABASE=barinzar
+DB_USERNAME=barinzar
+DB_PASSWORD="replace-with-your-database-password"
+BARIN_ADMIN_EMAIL=manager@example.com
+BARIN_DB_SETUP=demo
+```
+
+اگر قبلاً کلید را در `/run/barinzar-config/app_key` نگه داشته‌اید، همان مقدار را در `APP_KEY` فایل جدید بگذارید. با فایل پایدار و دستور پیش‌فرض ایمیج، می‌توانید دستور اجرایی سفارشی قبلی را از پنل حذف کنید. برای bootstrap دستی همان داده نمایشی پس از migration، از `php artisan db:seed --class=DemoInstallationSeeder --force` استفاده کنید.
