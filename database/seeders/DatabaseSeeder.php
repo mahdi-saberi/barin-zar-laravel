@@ -17,11 +17,26 @@ class DatabaseSeeder extends Seeder
             ['petal-set', 'نیم‌ست گلبرگ', 'set', 7000, null],
             ['anklet', 'پابند سه‌آویز', 'anklet', 2000, null],
         ];
-        foreach ($products as [$slug, $name, $category, $milligrams, $id]) {
+        // Keep the original six products and reuse their bundled photos for demo variants.
+        $styles = [
+            'مهتاب', 'باران', 'آفتاب', 'رویا', 'ترمه', 'نسیم', 'آوا', 'یلدا',
+            'نگار', 'دریا', 'بهار', 'مانا', 'رها', 'مهر', 'نوا', 'پرنیان',
+        ];
+        for ($index = 0; $index < 100; $index++) {
+            [$slug, $name, $category, $milligrams, $id] = $products[$index % count($products)];
+            $imageSlug = $slug;
+            $isVariant = $index >= count($products);
+            $variant = intdiv($index, count($products));
+            if ($isVariant) {
+                $slug = sprintf('demo-%s-%02d', $category, $variant);
+                $name .= ' طرح '.$styles[$variant - 1];
+                $milligrams += $variant * 125;
+            }
             Entry::firstOrCreate(['kind' => 'product', 'slug' => $slug], ['data' => compact('name', 'category', 'milligrams') + [
-                'labor' => 1600000, 'profit_bps' => 500, 'tax_bps' => 0, 'discount_bps' => 0,
-                'stock' => 3, 'cost' => 0, 'description' => 'طلای زرد ۱۸ عیار. نمونه نمایشی گالری برین‌زر.',
-                'images' => $id ? ["/assets/p{$id}.webp", "/assets/m{$id}.webp"] : ["/assets/{$slug}.webp", "/assets/{$slug}-detail.webp"], 'image_alts' => $id ? ['نمای محصول', 'روی مدل'] : ['نمای کامل', 'برش جزئیات'],
+                'labor' => $isVariant ? 800000 + ($index % 12) * 150000 : 1600000,
+                'profit_bps' => 500, 'tax_bps' => 0, 'discount_bps' => $isVariant && $index % 5 === 0 ? 500 : 0,
+                'stock' => $isVariant ? 1 + ($index % 8) : 3, 'cost' => 0, 'description' => 'طلای زرد ۱۸ عیار. نمونه نمایشی گالری برین‌زر.',
+                'images' => $id ? ["/assets/p{$id}.webp", "/assets/m{$id}.webp"] : ["/assets/{$imageSlug}.webp", "/assets/{$imageSlug}-detail.webp"], 'image_alts' => $id ? ['نمای محصول', 'روی مدل'] : ['نمای کامل', 'برش جزئیات'],
             ]]);
         }
         Entry::firstOrCreate(['kind' => 'page', 'slug' => 'home'], ['data' => [
