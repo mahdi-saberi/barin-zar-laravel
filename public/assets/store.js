@@ -29,3 +29,45 @@ if (seo) {
     seo.addEventListener('input', update);
     update();
 }
+
+const collectionNavigation = document.querySelector('[data-collection-tabs]');
+if (collectionNavigation) {
+    const tabs = Array.from(collectionNavigation.querySelectorAll('[data-collection-tab]'));
+    const panels = tabs.map(tab => document.getElementById(tab.hash.slice(1)));
+    collectionNavigation.setAttribute('role', 'tablist');
+
+    const select = (index, focus = false) => {
+        tabs.forEach((tab, current) => {
+            const selected = index === current;
+            tab.setAttribute('aria-selected', String(selected));
+            tab.tabIndex = selected ? 0 : -1;
+            panels[current].hidden = !selected;
+        });
+        if (focus) tabs[index].focus();
+    };
+
+    tabs.forEach((tab, index) => {
+        const panel = panels[index];
+        tab.setAttribute('role', 'tab');
+        tab.setAttribute('aria-controls', panel.id);
+        panel.setAttribute('role', 'tabpanel');
+        panel.setAttribute('aria-labelledby', tab.id);
+        tab.addEventListener('click', event => {
+            event.preventDefault();
+            select(index);
+        });
+        tab.addEventListener('keydown', event => {
+            const next = {
+                ArrowLeft: (index + 1) % tabs.length,
+                ArrowRight: (index + tabs.length - 1) % tabs.length,
+                Home: 0,
+                End: tabs.length - 1,
+                ' ': index,
+            }[event.key];
+            if (next === undefined) return;
+            event.preventDefault();
+            select(next, true);
+        });
+    });
+    select(Math.max(0, tabs.findIndex(tab => tab.hash === location.hash)));
+}

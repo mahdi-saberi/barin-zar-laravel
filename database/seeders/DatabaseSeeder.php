@@ -41,7 +41,7 @@ class DatabaseSeeder extends Seeder
         }
         Entry::firstOrCreate(['kind' => 'page', 'slug' => 'home'], ['data' => [
             'name' => 'طلایی که با شما می‌ماند', 'description' => 'قطعه‌ی دلخواهتان را با دیدن جزئیات، عکس روی مدل و ریز قیمت انتخاب کنید.',
-            'hero' => '/assets/campaign.webp', 'badge' => 'گالری طلای ۱۸ عیار · بازار تهران',
+            'hero' => '/assets/barinzar-hero.webp', 'badge' => 'گالری طلای ۱۸ عیار · بازار تهران',
             'sections' => 'categories, products, campaigns, budget, guide',
         ]]);
         Entry::firstOrCreate(['kind' => 'page', 'slug' => 'guide'], ['data' => [

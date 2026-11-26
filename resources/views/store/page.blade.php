@@ -1,0 +1,9 @@
+<article class="wrap inner-section content-page">
+    <nav class="breadcrumb" aria-label="مسیر صفحه">
+        <a href="{{ route('home') }}">خانه</a>
+        <span aria-current="page">{{ $heading }}</span>
+    </nav>
+    <h1>{{ $heading }}</h1>
+    @if(!empty($page['hero']))<img src="{{ $page['hero'] }}" alt="" width="950" height="520" fetchpriority="high">@endif
+    @if(!empty($page['description']))<p class="prose">{{ $page['description'] }}</p>@endif
+</article>
