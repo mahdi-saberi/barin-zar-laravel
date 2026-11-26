@@ -17,46 +17,27 @@
 <body @class(['home-page' => $mode === 'home', 'theme-'.$theme => $theme])>
 <a class="skip" href="#main">رفتن به محتوا</a>
 <header class="store-header">
-    @if(!empty($rate['value']))
-        @php
-            $updated = \App\Support\PersianFormat::dateTime($rate['timestamp'] ?? null);
-            $rateSource = match ($rate['source'] ?? '') {
-                'api' => null,
-                'manual' => 'دستی',
-                default => 'نمونه',
-            };
-        @endphp
-        <div class="rate-bar">
-            <span>نرخ طلای ۱۸ عیار</span>
-            <strong><bdi>{{ \App\Support\PersianFormat::number((int) $rate['value']) }}</bdi> تومان / گرم</strong>
-            @if($updated)
-                <time dir="ltr" datetime="{{ $rate['timestamp'] }}" title="آخرین به‌روزرسانی به وقت تهران">{{ $updated }}</time>
-            @endif
-            @if($rateSource)<small class="rate-source">{{ $rateSource }}</small>@endif
-        </div>
-    @endif
+    @include('store.rate-bar')
     <div class="site-masthead wrap">
+        <a class="site-brand" href="{{ route('home') }}">
+            <img src="{{ asset('assets/logo.webp') }}" alt="{{ $brand ?? 'برین‌زر' }}" width="125" height="91">
+        </a>
+        <nav class="store-nav" aria-label="انواع طلا">
+            <a href="{{ route('shop.index', $filters) }}" @if($mode === 'catalog' && !$category) aria-current="page" @endif>همهٔ طلاها</a>
+            @foreach($categories as $key => $label)
+                <a href="{{ route('shop.category', ['category' => $key] + $filters) }}" @if($mode === 'catalog' && $category === $key) aria-current="page" @endif>{{ $label }}</a>
+            @endforeach
+        </nav>
         <form class="site-search" role="search" method="get" action="{{ route('shop.index') }}">
             <input type="search" name="q" aria-label="جست‌وجو در محصولات" value="{{ $filters['q'] ?? '' }}" placeholder="جست‌وجو در محصولات">
             <button type="submit" aria-label="جست‌وجو"><span class="search-mark" aria-hidden="true"></span></button>
         </form>
-        <a class="site-brand" href="{{ route('home') }}">
-            <img src="{{ asset('assets/logo.webp') }}" alt="{{ $brand ?? 'برین‌زر' }}" width="125" height="91">
-        </a>
         <a class="site-basket" href="{{ url('/cart') }}" aria-label="سبد خرید، {{ $cart->count() }} محصول">
             <span class="bag-mark" aria-hidden="true"></span>
             <span class="basket-label">سبد خرید</span>
             <span class="basket-count" aria-hidden="true">{{ $cart->count() }}</span>
         </a>
     </div>
-    <nav class="store-nav" aria-label="انواع طلا">
-        <div class="wrap">
-            <a href="{{ route('shop.index', $filters) }}" @if($mode === 'catalog' && !$category) aria-current="page" @endif>همهٔ طلاها</a>
-            @foreach($categories as $key => $label)
-                <a href="{{ route('shop.category', ['category' => $key] + $filters) }}" @if($mode === 'catalog' && $category === $key) aria-current="page" @endif>{{ $label }}</a>
-            @endforeach
-        </div>
-    </nav>
 </header>
 <main id="main">
     @if(session('notice') || $errors->any())

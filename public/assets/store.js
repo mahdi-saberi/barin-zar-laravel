@@ -71,3 +71,86 @@ if (collectionNavigation) {
     });
     select(Math.max(0, tabs.findIndex(tab => tab.hash === location.hash)));
 }
+
+const categorySlider = document.querySelector('[data-category-slider]');
+if (categorySlider) {
+    const gallery = categorySlider.querySelector('.category-gallery');
+    const controls = categorySlider.querySelector('[data-slider-controls]');
+    const previous = categorySlider.querySelector('[data-slider-previous]');
+    const next = categorySlider.querySelector('[data-slider-next]');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    const updateControls = () => {
+        const offset = Math.abs(gallery.scrollLeft);
+        const maximum = gallery.scrollWidth - gallery.clientWidth;
+        controls.hidden = maximum <= 2;
+        previous.disabled = offset <= 2;
+        next.disabled = offset >= maximum - 2;
+    };
+    const move = direction => gallery.scrollBy({
+        left: direction * gallery.clientWidth,
+        behavior: reducedMotion.matches ? 'auto' : 'smooth',
+    });
+
+    previous.addEventListener('click', () => move(1));
+    next.addEventListener('click', () => move(-1));
+    gallery.addEventListener('scroll', updateControls, { passive: true });
+    new ResizeObserver(updateControls).observe(gallery);
+    updateControls();
+}
+
+const rateBar = document.querySelector('[data-rate-url]');
+if (rateBar) {
+    const minute = 60_000;
+    const price = rateBar.querySelector('[data-rate-price]');
+    const updated = rateBar.querySelector('[data-rate-time]');
+    const source = rateBar.querySelector('[data-rate-source]');
+    const reload = rateBar.querySelector('[data-rate-reload]');
+    const initialValue = Number(rateBar.dataset.rateValue);
+    let lastCheck = Date.now();
+    let timer;
+    let checking = false;
+
+    async function refreshRate() {
+        if (document.hidden || checking) return;
+        checking = true;
+        lastCheck = Date.now();
+
+        try {
+            const response = await fetch(rateBar.dataset.rateUrl, {
+                cache: 'no-store',
+                headers: { Accept: 'application/json' },
+                signal: AbortSignal.timeout(10_000),
+            });
+            if (!response.ok) return;
+
+            const rate = await response.json();
+            rateBar.hidden = !rate.value;
+            if (!rate.value) return;
+
+            price.textContent = rate.price;
+            updated.textContent = rate.updated ?? '';
+            updated.hidden = !rate.datetime;
+            if (rate.datetime) updated.dateTime = rate.datetime;
+            else updated.removeAttribute('datetime');
+            source.textContent = rate.source ?? '';
+            source.hidden = !rate.source;
+            if (reload) reload.hidden = rate.value === initialValue;
+        } catch {
+            // Keep the last rendered rate when the request fails.
+        } finally {
+            checking = false;
+            scheduleCheck();
+        }
+    }
+
+    function scheduleCheck() {
+        window.clearTimeout(timer);
+        if (document.hidden || checking) return;
+        timer = window.setTimeout(refreshRate, Math.max(0, minute - (Date.now() - lastCheck)));
+    }
+
+    document.addEventListener('visibilitychange', scheduleCheck);
+    window.addEventListener('pageshow', scheduleCheck);
+    scheduleCheck();
+}

@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Entry;
 use App\Services\Pricing;
+use App\Support\GoldRateDisplay;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -16,6 +18,13 @@ class Store extends Controller
     private const CATALOG_PER_PAGE = 12;
 
     public function __construct(private readonly Pricing $pricing) {}
+
+    public function goldRate(): JsonResponse
+    {
+        return response()->json(GoldRateDisplay::from(Entry::getData('rate', 'latest')), headers: [
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
 
     public function catalog(Request $request, ?string $category = null)
     {
