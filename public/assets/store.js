@@ -12,6 +12,20 @@ for (const thumbnail of thumbnails) {
     });
 }
 
+for (const alternate of document.querySelectorAll('[data-product-alternate]')) {
+    const link = alternate.parentElement;
+    const loadPhoto = () => {
+        if (!alternate.isConnected) return;
+        const photo = alternate.content.firstElementChild;
+        photo.addEventListener('load', () => photo.classList.add('is-loaded'), { once: true });
+        alternate.replaceWith(photo);
+    };
+    link.addEventListener('pointerenter', event => {
+        if (event.pointerType !== 'touch') loadPhoto();
+    });
+    link.addEventListener('focus', loadPhoto, { once: true });
+}
+
 const seo = document.querySelector('[data-seo-form]');
 if (seo) {
     const update = () => {
@@ -34,9 +48,12 @@ const collectionNavigation = document.querySelector('[data-collection-tabs]');
 if (collectionNavigation) {
     const tabs = Array.from(collectionNavigation.querySelectorAll('[data-collection-tab]'));
     const panels = tabs.map(tab => document.getElementById(tab.hash.slice(1)));
+    const controls = document.querySelector('[data-collection-controls]');
+    let selectedIndex = 0;
     collectionNavigation.setAttribute('role', 'tablist');
 
     const select = (index, focus = false) => {
+        selectedIndex = index;
         tabs.forEach((tab, current) => {
             const selected = index === current;
             tab.setAttribute('aria-selected', String(selected));
@@ -70,6 +87,18 @@ if (collectionNavigation) {
         });
     });
     select(Math.max(0, tabs.findIndex(tab => tab.hash === location.hash)));
+
+    if (controls) {
+        const status = controls.querySelector('[role="status"]');
+        for (const button of controls.querySelectorAll('[data-collection-step]')) {
+            button.addEventListener('click', () => {
+                select((selectedIndex + Number(button.dataset.collectionStep) + tabs.length) % tabs.length);
+                tabs[selectedIndex].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                status.textContent = tabs[selectedIndex].textContent;
+            });
+        }
+        controls.hidden = false;
+    }
 }
 
 const categorySlider = document.querySelector('[data-category-slider]');
