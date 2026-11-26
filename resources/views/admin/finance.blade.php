@@ -1,5 +1,5 @@
 <section class="admin-card admin-filter-card" aria-label="فیلتر سفارش‌ها">
-    <form class="admin-filters admin-order-filters" method="get" action="{{ route('admin.index') }}">
+    <form class="admin-filters admin-order-filters" method="get" action="{{ route('admin.index', [], false) }}">
         <input type="hidden" name="tab" value="finance">
         <label>کد، نام یا شماره تماس<input type="search" name="q" value="{{ $filters['q'] ?? '' }}" maxlength="120"></label>
         <label>وضعیت<select name="status">

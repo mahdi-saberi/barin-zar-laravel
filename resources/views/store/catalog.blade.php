@@ -1,3 +1,4 @@
+@php($catalogPath = $category ? route('shop.category', $category, false) : route('shop.index', [], false))
 <section class="wrap inner-section">
     <nav class="breadcrumb" aria-label="مسیر صفحه">
         <a href="{{ route('home') }}">خانه</a>
@@ -12,7 +13,7 @@
         <h1>{{ $heading }}</h1>
         @if($catalogDescription)<p>{{ $catalogDescription }}</p>@endif
     </div>
-    <form class="store-form catalog-filter" method="get" action="{{ url()->current() }}">
+    <form class="store-form catalog-filter" method="get" action="{{ $catalogPath }}">
         <label>نام محصول<input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="جست‌وجو در این فهرست"></label>
         <label>سقف بودجه (تومان)<input type="number" name="max" min="1" value="{{ $filters['max'] ?? '' }}"></label>
         <label>مرتب‌سازی<select name="sort">
@@ -24,7 +25,7 @@
     </form>
     <div class="results-toolbar">
         <p><bdi>{{ number_format($pagination->total()) }}</bdi> محصول</p>
-        @if($filters)<a class="text-link" href="{{ url()->current() }}">پاک کردن فیلترها</a>@endif
+        @if($filters)<a class="text-link" href="{{ $catalogPath }}">پاک کردن فیلترها</a>@endif
     </div>
     @include('products')
     {{ $pagination->onEachSide(1)->links('partials.pagination') }}

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\PublicHttps;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -11,10 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $proxies = getenv('APP_TRUSTED_PROXIES');
-        if ($proxies) {
-            $middleware->trustProxies(at: array_map('trim', explode(',', $proxies)));
-        }
+        $middleware->append(PublicHttps::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['rate_token', 'ai_token']);

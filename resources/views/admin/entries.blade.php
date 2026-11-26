@@ -1,5 +1,5 @@
 <section class="admin-card admin-filter-card" aria-label="فیلتر فهرست">
-    <form class="admin-filters {{ $kind === 'product' ? 'admin-product-filters' : 'admin-content-filters' }}" method="get" action="{{ route('admin.index') }}">
+    <form class="admin-filters {{ $kind === 'product' ? 'admin-product-filters' : 'admin-content-filters' }}" method="get" action="{{ route('admin.index', [], false) }}">
         <input type="hidden" name="tab" value="{{ $kind }}">
         <label>{{ $kind === 'seo' ? 'عنوان یا شناسه' : 'نام یا شناسه' }}<input type="search" name="q" value="{{ $filters['q'] ?? '' }}" maxlength="140"></label>
         @if($kind === 'product')

@@ -35,7 +35,7 @@
     </section>
 @endif
 
-<form class="admin-edit-form" method="post" action="{{ route('admin.save', $kind) }}" @if($kind === 'seo') data-seo-form @endif>
+<form class="admin-edit-form" method="post" action="{{ route('admin.save', $kind, false) }}" @if($kind === 'seo') data-seo-form @endif>
     @csrf
     @if($kind === 'settings')
         <input type="hidden" name="slug" value="store">
@@ -73,7 +73,7 @@
                         @endforeach
                     </div>
                 @endif
-                <div class="admin-inline-upload" data-inline-upload="{{ route('admin.upload') }}" hidden>
+                <div class="admin-inline-upload" data-inline-upload="{{ route('admin.upload', [], false) }}" hidden>
                     <label>بارگذاری مستقیم<input type="file" accept="image/webp,image/jpeg,image/png" data-upload-file></label>
                     <button class="admin-button" type="button" data-upload-button>افزودن تصویر</button>
                     <small class="admin-upload-status" role="status" data-upload-message></small>
@@ -96,7 +96,7 @@
 @if($entry && ($kind === 'seo' || $kind === 'campaign' || ($kind === 'page' && !in_array($entry->slug, $corePages, true))))
     <details class="admin-card admin-delete">
         <summary>حذف این مورد</summary>
-        <form method="post" action="{{ route('admin.entries.destroy', ['kind' => $kind, 'slug' => $entry->slug]) }}">
+        <form method="post" action="{{ route('admin.entries.destroy', ['kind' => $kind, 'slug' => $entry->slug], false) }}">
             @csrf
             @method('DELETE')
             <p>«{{ $record['name'] ?? $record['title'] ?? $entry->slug }}» حذف شود؟</p>

@@ -37,7 +37,7 @@
                 <td><span class="admin-badge {{ $published ? 'badge-success' : 'badge-neutral' }}">{{ $published ? 'منتشرشده' : 'پنهان' }}</span></td>
                 <td><div class="admin-actions admin-row-actions">
                     <a class="admin-button admin-button-small" href="{{ $editUrl }}">ویرایش</a>
-                    <form method="post" action="{{ route('admin.products.visibility', $item->slug) }}">
+                    <form method="post" action="{{ route('admin.products.visibility', $item->slug, false) }}">
                         @csrf
                         @method('PATCH')
                         <button class="admin-button admin-button-small admin-row-link" type="submit" name="published" value="{{ $published ? 0 : 1 }}">{{ $published ? 'پنهان کردن' : 'انتشار' }}</button>

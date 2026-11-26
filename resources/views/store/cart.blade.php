@@ -21,7 +21,7 @@
                             <span><strong>{{ $item['name'] }}</strong><br><small><bdi>{{ number_format($item['milligrams'] / 1000, 3) }}</bdi> گرم</small></span>
                         </a>
                         <div class="cart-price"><strong><bdi>{{ number_format($quotes[$id]['total']) }}</bdi> تومان</strong></div>
-                        <form method="post" action="{{ url('/cart/'.$id) }}">
+                        <form method="post" action="{{ route('cart.change', $id, false) }}">
                             @csrf
                             <button class="text-link" type="submit" name="remove" value="1" aria-label="حذف {{ $item['name'] }} از سبد">حذف</button>
                         </form>
@@ -29,7 +29,7 @@
                 @endforeach
                 <p class="cart-total"><span>جمع سبد خرید</span><strong><bdi>{{ number_format($quotes->only($cart->all())->sum('total')) }}</bdi> تومان</strong></p>
             </div>
-            <form class="store-form checkout-form" method="post" action="{{ url('/order') }}">
+            <form class="store-form checkout-form" method="post" action="{{ route('order.store', [], false) }}">
                 @csrf
                 <input type="hidden" name="checkout_key" value="{{ $checkoutKey }}">
                 <h2>اطلاعات خریدار</h2>

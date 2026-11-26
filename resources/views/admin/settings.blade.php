@@ -4,7 +4,7 @@
         @include('admin.rate-value')
     </div>
     @if(!empty($record['rate_url']))
-        <form method="post" action="{{ route('admin.rate') }}">
+        <form method="post" action="{{ route('admin.rate', [], false) }}">
             @csrf
             <button class="admin-button" type="submit">دریافت نرخ از API</button>
         </form>
