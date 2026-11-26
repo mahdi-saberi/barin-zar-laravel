@@ -1,16 +1,24 @@
 <?php
 
-use App\Models\Entry;
-use App\Services\Integrations;
+use App\Services\RateUpdater;
+use App\Services\OrderPayments;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::call(function () {
-    if (!empty(Entry::getData('settings', 'store')['rate_url'])) {
-        app(Integrations::class)->refresh();
-    }
-})->name('barin-gold-rate')->everyMinute()->withoutOverlapping(2);
+Schedule::useCache('database');
+Schedule::call(fn () => app(RateUpdater::class)->run('scheduled'))
+    ->name('barin-gold-rate')->everyMinute()->onOneServer()->withoutOverlapping(2);
+Schedule::call(fn () => app(OrderPayments::class)->expireOrders())
+    ->name('barin-expire-orders')->everyMinute()->onOneServer()->withoutOverlapping(2);
 
-\Illuminate\Support\Facades\Artisan::command('barin:admin {email}', function () {
+Artisan::command('barin:rate', function (RateUpdater $updater) {
+    $status = $updater->run('manual');
+    $this->line($status['attempted_at'].' '.$status['message']);
+
+    return $status['state'] === 'updated' ? 0 : 1;
+});
+
+Artisan::command('barin:admin {email}', function () {
     $email = $this->argument('email');
     if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strcasecmp((string) config('barin.admin_email'), $email) !== 0) {
         $this->error('Set BARIN_ADMIN_EMAIL first.');

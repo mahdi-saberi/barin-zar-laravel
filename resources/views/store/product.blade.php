@@ -24,33 +24,30 @@
                 </div>
             @endif
         </div>
-        <div class="purchase-panel">
+        <div class="purchase-panel" data-quote-slug="{{ $slug }}">
             <p class="detail-type">طلای ۱۸ عیار <span aria-hidden="true">·</span> <bdi>{{ number_format($data['milligrams'] / 1000, 3) }}</bdi> گرم</p>
             <h1>{{ $heading }}</h1>
             @if(!empty($data['description']))
                 <div class="detail-description rich-content">{{ \App\Support\RichText::render($data, 'description') }}</div>
             @endif
-            @if(!empty($rate['value']))
-                <div class="detail-price"><strong><bdi>{{ number_format($quote['total']) }}</bdi></strong> تومان</div>
-            @endif
-            @if($data['stock'] > 0 && !empty($rate['value']))
-                <form method="post" action="{{ route('cart.change', $slug, false) }}">
+            <div class="detail-price" data-quote-price @if(empty($rate['value'])) hidden @endif><strong><bdi data-quote-field="total">{{ number_format($quote['total']) }}</bdi></strong> تومان</div>
+            @if($data['stock'] > 0)
+                <form method="post" action="{{ route('cart.change', $slug, false) }}" data-quote-price @if(empty($rate['value'])) hidden @endif>
                     @csrf
                     <button class="button purchase-button" type="submit">افزودن به سبد خرید</button>
                 </form>
+                <p class="availability" data-quote-missing @if(!empty($rate['value'])) hidden @endif>قیمت در انتظار دریافت نرخ طلاست.</p>
             @else
-                <p class="availability">{{ $data['stock'] <= 0 ? 'در حال حاضر ناموجود است.' : 'قیمت در انتظار دریافت نرخ طلاست.' }}</p>
+                <p class="availability">در حال حاضر ناموجود است.</p>
             @endif
-            @if(!empty($rate['value']))
-                <details class="price-details" open>
+                <details class="price-details" open data-quote-price @if(empty($rate['value'])) hidden @endif>
                     <summary>ریز قیمت</summary>
                     <dl>
                         @foreach(['gold' => 'ارزش طلا', 'labor' => 'اجرت', 'profit' => 'سود فروش', 'discount' => 'تخفیف', 'tax' => 'مالیات'] as $key => $label)
-                            <div><dt>{{ $label }}</dt><dd><bdi>{{ number_format($quote[$key]) }}</bdi> تومان</dd></div>
+                            <div><dt>{{ $label }}</dt><dd><bdi data-quote-field="{{ $key }}">{{ number_format($quote[$key]) }}</bdi> تومان</dd></div>
                         @endforeach
                     </dl>
                 </details>
-            @endif
         </div>
     </div>
 </section>

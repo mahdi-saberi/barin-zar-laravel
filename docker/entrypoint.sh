@@ -35,4 +35,8 @@ if [ "${1:-}" = php ]; then
     exec runuser -u www-data -- "$@"
 fi
 
+if [ "${1:-}" = apache2-foreground ] && [ "$(runuser -u www-data -- php docker/setup-mode.php --scheduler)" = yes ]; then
+    exec tini -g -- bash docker/run-web.sh "$@"
+fi
+
 exec docker-php-entrypoint "$@"

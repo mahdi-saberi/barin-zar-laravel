@@ -5,6 +5,10 @@
         'home' => $page['name'] ?? 'طلایی که با شما می‌ماند',
         'catalog' => $catalogTitle,
         'cart' => 'سبد خرید',
+        'account' => 'حساب کاربری',
+        'account-login' => 'ورود به حساب',
+        'account-register' => auth()->check() ? 'تکمیل اطلاعات خریدار' : 'ثبت‌نام مشتری',
+        'order' => 'جزئیات سفارش',
         default => $data['name'],
     };
     $pageNumber = $pagination?->currentPage() ?? 1;
@@ -24,7 +28,7 @@
         $homeHero = '/assets/barinzar-hero.webp';
     }
     $ogImage = $data['images'][0] ?? $homeHero;
-    $noindex = $mode === 'cart' || !empty($seo['noindex']);
+    $noindex = in_array($mode, ['cart', 'account', 'account-login', 'account-register', 'order'], true) || !empty($seo['noindex']);
     $theme = $active->first()?->data['theme'] ?? null;
     $brand = $settings['brand'] ?? null;
     $footer = \App\Support\RichText::render($settings, 'footer', 'گالری طلای ۱۸ عیار در بازار تهران');

@@ -144,9 +144,11 @@ small { color: var(--muted); }
     background: currentColor;
     transform: rotate(-48deg);
 }
-.site-basket { grid-area: basket; justify-self: end; gap: 7px; font-size: 13px; font-weight: 620; white-space: nowrap; }
-.site-basket:hover, .store-nav a:hover { color: var(--gold); }
-.home-page :is(.site-basket, .store-nav a):hover { color: var(--foil); }
+.site-actions { grid-area: basket; display: flex; align-items: center; gap: clamp(8px, 1.2vw, 18px); }
+.site-account { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; font-weight: 660; white-space: nowrap; }
+.site-basket { justify-self: end; gap: 7px; font-size: 13px; font-weight: 620; white-space: nowrap; }
+.site-account:hover, .site-basket:hover, .store-nav a:hover { color: var(--gold); }
+.home-page :is(.site-account, .site-basket, .store-nav a):hover { color: var(--foil); }
 .bag-mark {
     position: relative;
     display: inline-block;
@@ -556,6 +558,18 @@ small { color: var(--muted); }
 .footer-description { color: #d7dce4; font-size: 14px; }
 .footer-links { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 23px; align-self: center; font-size: 14px; }
 .footer-links a:hover { color: var(--foil); }
+
+.account-form { max-width: 560px; }
+.account-form h1 { margin-block-end: 16px; }
+.checkout-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.checkout-form > h2 { margin-block-start: 4px; font-size: 20px; }
+.order-receipt { display: grid; gap: 12px; align-content: start; }
+.order-receipt dl > div, .account-orders a { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding-block: 7px; border-block-end: 1px solid var(--line); }
+.order-receipt dd { overflow-wrap: anywhere; text-align: end; }
+.receipt-details { font-size: 14px; }
+.receipt-details dt { color: var(--muted); }
+.account-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px; margin-block-end: 22px; }
+.account-orders a:hover { color: var(--gold); }
 
 @media (max-width: 1000px) {
     .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

@@ -22,6 +22,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'mobile',
+        'national_id',
+        'national_id_hash',
     ];
 
     /**
@@ -32,6 +35,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'national_id',
+        'national_id_hash',
     ];
 
     /**
@@ -44,6 +49,17 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'national_id' => 'encrypted',
         ];
+    }
+
+    public function orders(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function checkoutProfileComplete(): bool
+    {
+        return filled($this->mobile) && filled($this->national_id_hash);
     }
 }

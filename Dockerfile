@@ -4,7 +4,7 @@ FROM php:8.4-apache-bookworm
 WORKDIR /var/www/html
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends unzip \
+    && apt-get install -y --no-install-recommends nano tini unzip \
     && docker-php-ext-install pdo_mysql opcache \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*

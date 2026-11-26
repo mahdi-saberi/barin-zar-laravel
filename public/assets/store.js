@@ -136,6 +136,11 @@ if (rateBar) {
     const source = rateBar.querySelector('[data-rate-source]');
     const reload = rateBar.querySelector('[data-rate-reload]');
     const initialValue = Number(rateBar.dataset.rateValue);
+    const panels = Array.from(document.querySelectorAll('[data-quote-slug]'));
+    const slugs = new Set(panels.map(panel => panel.dataset.quoteSlug));
+    const endpoint = new URL(rateBar.dataset.rateUrl, window.location.href);
+    for (const slug of slugs) endpoint.searchParams.append('products[]', slug);
+    const numberFormat = new Intl.NumberFormat('en-US');
     let lastCheck = Date.now();
     let timer;
     let checking = false;
@@ -146,7 +151,7 @@ if (rateBar) {
         lastCheck = Date.now();
 
         try {
-            const response = await fetch(rateBar.dataset.rateUrl, {
+            const response = await fetch(endpoint, {
                 cache: 'no-store',
                 headers: { Accept: 'application/json' },
                 signal: AbortSignal.timeout(10_000),
@@ -164,7 +169,16 @@ if (rateBar) {
             else updated.removeAttribute('datetime');
             source.textContent = rate.source ?? '';
             source.hidden = !rate.source;
-            if (reload) reload.hidden = rate.value === initialValue;
+            for (const panel of panels) {
+                const quote = rate.quotes?.[panel.dataset.quoteSlug];
+                if (!Number.isSafeInteger(quote?.total)) continue;
+                for (const field of panel.querySelectorAll('[data-quote-field]')) {
+                    field.textContent = numberFormat.format(quote[field.dataset.quoteField]);
+                }
+                for (const element of panel.querySelectorAll('[data-quote-price]')) element.hidden = false;
+                for (const element of panel.querySelectorAll('[data-quote-missing]')) element.hidden = true;
+            }
+            if (reload) reload.hidden = rate.value === initialValue || (slugs.size > 0 && Object.keys(rate.quotes ?? {}).length === slugs.size);
         } catch {
             // Keep the last rendered rate when the request fails.
         } finally {
@@ -182,4 +196,15 @@ if (rateBar) {
     document.addEventListener('visibilitychange', scheduleCheck);
     window.addEventListener('pageshow', scheduleCheck);
     scheduleCheck();
+}
+
+const checkoutForm = document.querySelector('[data-checkout-form]');
+if (checkoutForm) {
+    const updateAddress = () => {
+        const shipping = checkoutForm.elements.delivery.value === 'shipping';
+        checkoutForm.querySelector('[data-shipping-address]').hidden = !shipping;
+        checkoutForm.elements.address.required = shipping;
+    };
+    checkoutForm.elements.delivery.addEventListener('change', updateAddress);
+    updateAddress();
 }

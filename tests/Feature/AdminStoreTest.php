@@ -94,12 +94,13 @@ class AdminStoreTest extends TestCase
     public function test_checkout_order_filters_csv_and_stock_restoration(): void
     {
         $this->signIn();
+        auth()->user()->forceFill(['name' => 'مشتری نمونه', 'mobile' => '09120000000', 'national_id_hash' => str_repeat('a', 64)])->save();
         $this->post('/cart/leaf')->assertRedirect('/cart');
         $cart = $this->get('/cart')->assertOk();
         $this->from('/cart')->post('/order', [
-            'name' => 'مشتری نمونه', 'mobile' => '09120000000', 'delivery' => 'pickup',
+            'delivery' => 'pickup', 'gateway' => 'manual',
             'checkout_key' => $cart->viewData('checkoutKey'),
-        ])->assertRedirect('/cart')->assertSessionHasNoErrors();
+        ])->assertRedirectContains('/orders/')->assertSessionHasNoErrors();
         $checkout = DB::table('orders')->first();
         $this->assertSame(2, Entry::getData('product', 'leaf')['stock']);
 

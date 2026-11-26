@@ -9,7 +9,7 @@
     <h1>ورود به مدیریت</h1>
     <form class="admin-login-form" method="post" action="{{ route('login.attempt', [], false) }}">
         @csrf
-        <label>ایمیل<input name="email" type="email" value="{{ is_string(old('email')) ? old('email') : '' }}" dir="ltr" autocomplete="username" required autofocus></label>
+        <label>ایمیل یا شماره همراه<input name="email" type="text" value="{{ is_string(old('email')) ? old('email') : '' }}" dir="ltr" autocomplete="username" required autofocus></label>
         <label>رمز عبور<input name="password" type="password" dir="ltr" autocomplete="current-password" required></label>
         <button class="admin-button admin-primary" type="submit">ورود</button>
     </form>

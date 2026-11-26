@@ -29,20 +29,44 @@
                 @endforeach
                 <p class="cart-total"><span>جمع سبد خرید</span><strong><bdi>{{ number_format($quotes->only($cart->all())->sum('total')) }}</bdi> تومان</strong></p>
             </div>
-            <form class="store-form checkout-form" method="post" action="{{ route('order.store', [], false) }}">
+            @guest
+                <div class="checkout-form order-receipt">
+                    <h2>حساب خریدار</h2>
+                    <p>برای ثبت سفارش با شمارهٔ همراه وارد شوید یا حساب بسازید.</p>
+                    <a class="button" href="{{ route('account.register') }}">ثبت‌نام</a>
+                    <a class="text-link" href="{{ route('account.login') }}">ورود به حساب</a>
+                </div>
+            @elseif(!auth()->user()->checkoutProfileComplete())
+                <div class="checkout-form order-receipt">
+                    <h2>اطلاعات خریدار</h2>
+                    <a class="button" href="{{ route('account.register') }}">تکمیل اطلاعات خریدار</a>
+                </div>
+            @else
+            <form class="store-form checkout-form" method="post" action="{{ route('order.store', [], false) }}" data-checkout-form>
                 @csrf
                 <input type="hidden" name="checkout_key" value="{{ $checkoutKey }}">
                 <h2>اطلاعات خریدار</h2>
-                <label>نام و نام خانوادگی<input name="name" value="{{ is_string(old('name')) ? old('name') : '' }}" autocomplete="name" maxlength="120" required></label>
-                <label>شماره تماس<input name="mobile" value="{{ is_string(old('mobile')) ? old('mobile') : '' }}" type="tel" autocomplete="tel" maxlength="24" required></label>
-                <label>روش تحویل<select name="delivery">
+                <p>{{ auth()->user()->name }} · <bdi>{{ auth()->user()->mobile }}</bdi></p>
+                <h2>روش تحویل</h2>
+                <label>انتخاب روش<select name="delivery">
                     <option value="pickup">دریافت حضوری</option>
                     <option value="shipping" @selected(old('delivery') === 'shipping')>هماهنگی ارسال</option>
                 </select></label>
-                <label>نشانی برای ارسال<textarea name="address" autocomplete="street-address" maxlength="500" rows="3">{{ is_string(old('address')) ? old('address') : '' }}</textarea></label>
-                <button class="button" type="submit">ثبت درخواست خرید</button>
-                <small>فروشگاه برای تأیید پرداخت و تحویل با شما هماهنگ می‌کند.</small>
+                <label data-shipping-address>نشانی برای ارسال<textarea name="address" autocomplete="street-address" maxlength="500" rows="3">{{ is_string(old('address')) ? old('address') : '' }}</textarea></label>
+                <h2>روش پرداخت</h2>
+                @if($gateways->isEmpty())
+                    <input type="hidden" name="gateway" value="manual">
+                    <p>هماهنگی پرداخت با فروشگاه</p>
+                @else
+                    <label>درگاه پرداخت<select name="gateway" required>
+                        @foreach($gateways as $provider => $label)
+                            <option value="{{ $provider }}" @selected(old('gateway') === $provider)>{{ $label }}</option>
+                        @endforeach
+                    </select></label>
+                @endif
+                <button class="button" type="submit">ثبت سفارش و مشاهدهٔ رسید</button>
             </form>
+            @endguest
         </div>
     @endif
 </section>

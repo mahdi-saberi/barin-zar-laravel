@@ -27,15 +27,16 @@ class HttpsRoutingTest extends TestCase
         $this->assertTrue($product->getCookie(config('session.cookie'), false)->isSecure());
 
         $this->post(self::INTERNAL.'/cart/leaf')->assertRedirect(self::PUBLIC.'/cart');
+        $this->get(self::INTERNAL.'/cart')->assertOk()->assertSee(self::PUBLIC.'/account/register');
+        $this->post(self::INTERNAL.'/order')->assertRedirect(self::PUBLIC.'/account/login');
+        $this->actingAs(User::factory()->create(['mobile' => '09120000000', 'national_id_hash' => str_repeat('c', 64)]));
         $cart = $this->get(self::INTERNAL.'/cart')->assertOk()
             ->assertSee('action="/order"', false)
             ->assertDontSee(self::INTERNAL, false);
         $this->post(self::INTERNAL.'/order', [
-            'name' => 'کاربر آزمون',
-            'mobile' => '09120000000',
-            'delivery' => 'pickup',
+            'delivery' => 'pickup', 'gateway' => 'manual',
             'checkout_key' => $cart->viewData('checkoutKey'),
-        ])->assertSessionHasNoErrors()->assertRedirect(self::PUBLIC.'/cart');
+        ])->assertSessionHasNoErrors()->assertRedirectContains(self::PUBLIC.'/orders/');
     }
 
     public function test_login_form_and_saved_redirects_keep_the_public_https_origin(): void

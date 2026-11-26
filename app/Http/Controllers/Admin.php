@@ -3,20 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Models\Entry;
+use App\Models\Order;
+use App\Models\Payment;
+use App\Models\PaymentGateway;
+use App\Models\User;
 use App\Services\ImageStudio;
-use App\Services\Integrations;
+use App\Services\OrderPayments;
+use App\Services\Payments\Gateways;
 use App\Services\Pricing;
+use App\Services\RateUpdater;
+use App\Support\IranianIdentity;
 use App\Support\RichText;
+use App\Support\StaffAccess;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class Admin extends Controller
@@ -25,6 +33,9 @@ class Admin extends Controller
         'dashboard' => 'داشبورد',
         'product' => 'محصولات و موجودی',
         'finance' => 'سفارش‌ها و مالی',
+        'customers' => 'مشتریان',
+        'users' => 'کاربران و دسترسی‌ها',
+        'gateways' => 'درگاه‌های پرداخت',
         'page' => 'صفحه‌ها',
         'campaign' => 'بنرها و کمپین‌ها',
         'seo' => 'سئو',
@@ -32,27 +43,24 @@ class Admin extends Controller
         'settings' => 'تنظیمات فروشگاه',
     ];
 
-    private const STATUSES = [
-        'pending' => 'منتظر تأیید',
-        'paid' => 'پرداخت تأییدشده',
-        'fulfilled' => 'تحویل‌شده',
-        'cancelled' => 'لغوشده',
+    private const ACCESS = [
+        'dashboard' => 'dashboard', 'product' => 'content', 'page' => 'content', 'campaign' => 'content',
+        'seo' => 'content', 'studio' => 'content', 'finance' => 'orders', 'settings' => 'settings',
+        'customers' => 'customers', 'users' => 'users', 'gateways' => 'gateways',
     ];
-
-    private const TRANSITIONS = ['pending' => ['paid', 'cancelled'], 'paid' => ['fulfilled']];
 
     private const CORE_PAGES = ['home', 'catalog', 'guide'];
 
     public function __construct(private readonly Pricing $pricing, private readonly ImageStudio $studio) {}
 
-    private function authorizeAdmin(): void
+    private function authorizeAdmin(string $permission = 'dashboard'): void
     {
-        abort_unless(Auth::check() && Auth::user()->email === config('barin.admin_email'), 403);
+        abort_unless(StaffAccess::allows(Auth::user(), $permission), 403);
     }
 
     public function loginForm()
     {
-        if (Auth::check() && Auth::user()->email === config('barin.admin_email')) {
+        if (StaffAccess::allows(Auth::user(), 'dashboard')) {
             return redirect()->route('admin.index');
         }
 
@@ -61,8 +69,11 @@ class Admin extends Controller
 
     public function login(Request $request)
     {
-        $data = $request->validate(['email' => 'required|email', 'password' => 'required|string']);
-        if ($data['email'] !== config('barin.admin_email') || !Auth::attempt($data)) {
+        $data = $request->validate(['email' => 'required|string|max:255', 'password' => 'required|string']);
+        $identity = filter_var($data['email'], FILTER_VALIDATE_EMAIL) ? ['email' => $data['email']]
+            : ['mobile' => IranianIdentity::mobile($data['email'])];
+        $user = User::where($identity)->first();
+        if (!StaffAccess::allows($user, 'dashboard') || !Auth::attempt($identity + ['password' => $data['password']])) {
             return back()->withErrors(['email' => 'ورود ناموفق بود.']);
         }
         $request->session()->regenerate();
@@ -138,10 +149,13 @@ class Admin extends Controller
         $this->authorizeAdmin();
         $tab = $request->query('tab', 'dashboard');
         abort_unless(is_string($tab) && isset(self::TABS[$tab]), 404);
+        $this->authorizeAdmin(self::ACCESS[$tab]);
 
         $data = match ($tab) {
             'dashboard' => $this->dashboard(),
             'finance' => $this->finance($request),
+            'customers', 'users' => $this->directory($request, $tab === 'customers'),
+            'gateways' => ['gatewayDefinitions' => Gateways::DEFINITIONS, 'gatewayRecords' => PaymentGateway::all()->keyBy('provider')],
             'studio' => ['presets' => $this->studio->presets()],
             'settings' => [
                 'kind' => 'settings',
@@ -149,34 +163,44 @@ class Admin extends Controller
                 'record' => $this->studio->settings() + ['rate_unit' => 'toman'],
                 'formMode' => true,
                 'rate' => Entry::getData('rate', 'latest'),
+                'rateStatus' => Entry::getData('rate', 'scheduled'),
+                'manualRateStatus' => Entry::getData('rate', 'manual'),
             ],
             default => $this->entryPanel($request, $tab),
         };
 
         return view('admin.index', $data + [
             'tab' => $tab,
-            'tabs' => self::TABS,
-            'statuses' => self::STATUSES,
-            'transitions' => self::TRANSITIONS,
+            'tabs' => array_filter(self::TABS, fn ($key) => StaffAccess::allows(Auth::user(), self::ACCESS[$key]), ARRAY_FILTER_USE_KEY),
+            'statuses' => Order::STATUSES,
+            'transitions' => Order::TRANSITIONS,
             'corePages' => self::CORE_PAGES,
             'categories' => config('barin.categories'),
+            'can' => collect(['content', 'orders', 'finance', 'fulfill', 'settings'])->mapWithKeys(
+                fn ($permission) => [$permission => StaffAccess::allows(Auth::user(), $permission)]
+            )->all(),
         ]);
     }
 
     private function dashboard(): array
     {
         $products = Entry::products()->published();
-        $orders = DB::table('orders');
+        $orders = Order::query();
+        $user = Auth::user();
+        $canContent = StaffAccess::allows($user, 'content');
+        $canOrders = StaffAccess::allows($user, 'orders');
+        $canFinance = StaffAccess::allows($user, 'finance');
 
         return [
             'metrics' => [
-                'products' => (clone $products)->count(),
-                'lowStock' => $this->filterStock(clone $products, 'low')->count(),
-                'pending' => (clone $orders)->where('status', 'pending')->count(),
-                'sales' => (clone $orders)->whereIn('status', ['paid', 'fulfilled'])->sum('total'),
+                'products' => $canContent ? (clone $products)->count() : null,
+                'lowStock' => $canContent ? $this->filterStock(clone $products, 'low')->count() : null,
+                'pending' => $canOrders ? (clone $orders)->where('status', 'pending')->count() : null,
+                'sales' => $canFinance ? (clone $orders)->whereIn('status', ['paid', 'fulfilled'])->sum('total') : null,
             ],
             'rate' => Entry::getData('rate', 'latest'),
-            'orders' => $orders->latest('id')->limit(5)->get(),
+            'rateStatus' => Entry::getData('rate', 'scheduled'),
+            'orders' => $canOrders ? $orders->latest('id')->limit(5)->get() : collect(),
         ];
     }
 
@@ -262,28 +286,33 @@ class Admin extends Controller
     {
         $filters = array_filter($request->validate([
             'q' => 'nullable|string|max:120',
-            'status' => 'nullable|in:'.implode(',', array_keys(self::STATUSES)),
+            'status' => ['nullable', Rule::in(array_keys(Order::STATUSES))],
+            'gateway' => ['nullable', Rule::in(['manual', ...array_keys(Gateways::DEFINITIONS)])],
             'from' => 'nullable|date_format:Y-m-d',
             'to' => 'nullable|date_format:Y-m-d'.($request->filled('from') ? '|after_or_equal:from' : ''),
         ]), fn ($value) => $value !== null && $value !== '');
-        $orders = DB::table('orders');
+        $orders = Order::query();
         if (isset($filters['q'])) {
-            $pattern = '%'.strtr($filters['q'], ['!' => '!!', '%' => '!%', '_' => '!_']).'%';
-            $orders->where(function (QueryBuilder $query) use ($pattern) {
-                foreach (['reference', 'customer->name', 'customer->mobile'] as $field) {
-                    $column = $query->getGrammar()->wrap($field);
-                    $query->orWhereRaw("$column like ? escape '!'", [$pattern]);
+            $term = IranianIdentity::digits($filters['q']);
+            $pattern = '%'.strtr($term, ['!' => '!!', '%' => '!%', '_' => '!_']).'%';
+            $orders->where(function (Builder $query) use ($pattern) {
+                $grammar = $query->getQuery()->getGrammar();
+                foreach (['reference', 'customer->name', 'customer->mobile', 'manual_reference'] as $field) {
+                    $query->orWhereRaw($grammar->wrap($field)." like ? escape '!'", [$pattern]);
                 }
+                $query->orWhereHas('payments', fn (Builder $payments) => $payments->whereRaw("bank_reference like ? escape '!'", [$pattern]));
             });
         }
-        if (isset($filters['status'])) {
-            $orders->where('status', $filters['status']);
+        foreach (['status', 'gateway'] as $field) {
+            if (isset($filters[$field])) {
+                $orders->where($field, $filters[$field]);
+            }
         }
         if (isset($filters['from'])) {
-            $orders->whereDate('created_at', '>=', $filters['from']);
+            $orders->where('created_at', '>=', $filters['from'].' 00:00:00');
         }
         if (isset($filters['to'])) {
-            $orders->whereDate('created_at', '<=', $filters['to']);
+            $orders->where('created_at', '<=', $filters['to'].' 23:59:59');
         }
 
         return [$orders, $filters];
@@ -292,22 +321,63 @@ class Admin extends Controller
     private function finance(Request $request): array
     {
         [$query, $filters] = $this->orderQuery($request);
-        $paid = (clone $query)->whereIn('status', ['paid', 'fulfilled']);
-        $metrics = ['total' => $paid->sum('total'), 'count' => $paid->count(), 'margin' => 0, 'discount' => 0];
-        foreach ($paid->select('lines')->cursor() as $order) {
-            foreach (json_decode($order->lines, true) as $line) {
-                $metrics['margin'] += $line['total'] - $line['tax'] - $line['cost'];
-                $metrics['discount'] += $line['discount'];
+        $metrics = [];
+        $payments = null;
+        if (StaffAccess::allows($request->user(), 'finance')) {
+            $transactions = Payment::whereIn('order_id', (clone $query)->select('id'));
+            $verified = (clone $transactions)->whereNotNull('confirmed_at');
+            $metrics = [
+                'total' => 0, 'count' => 0, 'margin' => 0, 'cost_count' => 0, 'cost' => 0,
+                'discount' => 0, 'tax' => 0, 'labor' => 0, 'gold' => 0,
+                'pending' => (clone $query)->where('status', 'pending')->sum('total'),
+                'captured_rial' => (clone $verified)->sum('amount_rial'),
+                'fee_rial' => (clone $verified)->sum('fee_rial'),
+                'review_rial' => (clone $verified)->where('status', 'review')->sum('amount_rial'),
+            ];
+            $metrics['net_rial'] = $metrics['captured_rial'] - $metrics['fee_rial'];
+            foreach ((clone $query)->whereIn('status', ['paid', 'fulfilled'])->select('id', 'total', 'lines')->lazyById() as $order) {
+                $parts = $order->financials();
+                $metrics['total'] += $order->total;
+                $metrics['count']++;
+                foreach (['tax', 'discount', 'gold', 'labor'] as $key) {
+                    $metrics[$key] += $parts[$key];
+                }
+                if ($parts['margin'] !== null) {
+                    $metrics['cost_count']++;
+                    $metrics['margin'] += $parts['margin'];
+                    $metrics['cost'] += $parts['cost'];
+                }
             }
+            $payments = $transactions->with('order:id,reference')->latest('id')->paginate(20, pageName: 'transactions')->appends(['tab' => 'finance'] + $filters);
         }
-        $orders = $query->latest('id')->paginate(20)->appends(['tab' => 'finance'] + $filters);
+        $orders = $query->with('payments')->latest('id')->paginate(20)->appends(['tab' => 'finance'] + $filters);
+        $events = $payments ? DB::table('order_events')->whereIn('order_id', $orders->pluck('id'))
+            ->leftJoin('users', 'users.id', '=', 'order_events.user_id')
+            ->select('order_events.*', 'users.name as actor')->orderByDesc('order_events.id')->get()->groupBy('order_id') : collect();
 
-        return compact('orders', 'metrics', 'filters');
+        return compact('orders', 'metrics', 'filters', 'payments', 'events') + ['gatewayDefinitions' => Gateways::DEFINITIONS];
+    }
+
+    private function directory(Request $request, bool $customers): array
+    {
+        $term = $request->validate(['q' => 'nullable|string|max:120'])['q'] ?? '';
+        $users = User::query()->withCount('orders');
+        if ($customers) {
+            $users->whereNotNull('mobile');
+        }
+        if ($term !== '') {
+            $pattern = '%'.strtr(IranianIdentity::digits($term), ['!' => '!!', '%' => '!%', '_' => '!_']).'%';
+            $users->where(fn (Builder $query) => $query->whereRaw("name like ? escape '!'", [$pattern])
+                ->orWhereRaw("mobile like ? escape '!'", [$pattern])->orWhereRaw("email like ? escape '!'", [$pattern]));
+        }
+        $members = $users->latest('id')->paginate(25)->appends(['tab' => $customers ? 'customers' : 'users', 'q' => $term]);
+
+        return compact('members', 'term', 'customers');
     }
 
     public function save(Request $request, string $kind)
     {
-        $this->authorizeAdmin();
+        $this->authorizeAdmin($kind === 'settings' ? 'settings' : 'content');
         $fields = $this->fields()[$kind] ?? abort(404);
         $slugLimit = $kind === 'seo' ? 98 : 90;
         $rules = ['slug' => 'required|alpha_dash:ascii|max:'.$slugLimit, 'edit' => 'nullable|alpha_dash:ascii|max:'.$slugLimit];
@@ -411,7 +481,7 @@ class Admin extends Controller
 
     public function visibility(Request $request, string $slug)
     {
-        $this->authorizeAdmin();
+        $this->authorizeAdmin('content');
         $published = (bool) $request->validate(['published' => 'required|boolean'])['published'];
         DB::transaction(function () use ($slug, $published) {
             $product = Entry::products()->where('slug', $slug)->lockForUpdate()->firstOrFail();
@@ -423,7 +493,7 @@ class Admin extends Controller
 
     public function destroy(string $kind, string $slug)
     {
-        $this->authorizeAdmin();
+        $this->authorizeAdmin('content');
         abort_unless(in_array($kind, ['page', 'campaign', 'seo'], true), 404);
         abort_if($kind === 'page' && in_array($slug, self::CORE_PAGES, true), 422);
         Entry::where(compact('kind', 'slug'))->firstOrFail()->delete();
@@ -431,20 +501,18 @@ class Admin extends Controller
         return redirect()->route('admin.index', ['tab' => $kind])->with('notice', 'رکورد حذف شد.');
     }
 
-    public function refresh(Integrations $service)
+    public function refresh(RateUpdater $updater)
     {
-        $this->authorizeAdmin();
-        try {
-            $service->refresh();
-        } catch (HttpClientException) {
-            return back()->withErrors(['rate' => 'دریافت نرخ ناموفق بود. آخرین نرخ معتبر حفظ شد.']);
-        }
-        return back()->with('notice', 'نرخ از API به‌روز شد.');
+        $this->authorizeAdmin('settings');
+        $status = $updater->run('manual');
+
+        return $status['state'] === 'updated' ? back()->with('notice', $status['message'])
+            : back()->withErrors(['rate' => $status['message']]);
     }
 
     public function generate(Request $request)
     {
-        $this->authorizeAdmin();
+        $this->authorizeAdmin('content');
         $data = $request->validate(['preset' => 'required|integer', 'image' => ImageStudio::IMAGE_RULE]);
 
         return back()->with('generated', $this->studio->generate($data['image'], (int) $data['preset']));
@@ -452,13 +520,13 @@ class Admin extends Controller
 
     public function studioImage(string $file)
     {
-        $this->authorizeAdmin();
+        $this->authorizeAdmin('content');
         return Storage::disk('local')->response($this->studioPath($file));
     }
 
     public function publishImage(string $file)
     {
-        $this->authorizeAdmin();
+        $this->authorizeAdmin('content');
         $stream = Storage::disk('local')->readStream($this->studioPath($file));
         abort_unless(is_resource($stream), 404);
         $path = 'catalog/'.$file;
@@ -483,7 +551,7 @@ class Admin extends Controller
 
     public function upload(Request $request)
     {
-        $this->authorizeAdmin();
+        $this->authorizeAdmin('content');
         $data = $request->validate(['image' => ImageStudio::IMAGE_RULE, 'preset' => 'sometimes|required|integer']);
         $generated = isset($data['preset']);
         $path = $generated
@@ -497,42 +565,80 @@ class Admin extends Controller
             : back()->with('upload', $url)->with('notice', $generated ? 'تصویر استودیو در گالری ذخیره شد.' : 'تصویر بارگذاری شد.');
     }
 
-    public function status(Request $request, int $id)
+    public function status(Request $request, int $id, OrderPayments $payments)
     {
-        $this->authorizeAdmin();
-        $status = $request->validate(['status' => 'required|in:paid,fulfilled,cancelled'])['status'];
-        DB::transaction(function () use ($id, $status) {
-            $order = DB::table('orders')->where('id', $id)->lockForUpdate()->first() ?? abort(404);
-            if (! in_array($status, self::TRANSITIONS[$order->status] ?? [], true)) {
-                throw ValidationException::withMessages(['status' => 'این تغییر وضعیت برای سفارش مجاز نیست. فهرست سفارش‌ها را دوباره باز کنید.']);
-            }
-            if ($status === 'cancelled') {
-                foreach (json_decode($order->lines, true) as $line) {
-                    $product = Entry::products()->where('slug', $line['slug'])->lockForUpdate()->first();
-                    if ($product) {
-                        $data = $product->data;
-                        $data['stock']++;
-                        $product->update(['data' => $data]);
-                    }
-                }
-            }
-            DB::table('orders')->where('id', $id)->update(compact('status'));
-        }, 3);
+        $data = $request->validate(['status' => 'required|in:paid,fulfilled,cancelled', 'manual_reference' => 'nullable|string|max:120']);
+        $this->authorizeAdmin($data['status'] === 'fulfilled' ? 'fulfill' : 'finance');
+        $payments->changeStatus(Order::findOrFail($id), $data['status'], $request->user()->id, $data['manual_reference'] ?? null);
+
         return back()->with('notice', 'وضعیت سفارش ذخیره شد.');
+    }
+
+    public function verifyPayment(Payment $payment, OrderPayments $payments)
+    {
+        $this->authorizeAdmin('finance');
+        abort_unless($payment->status === 'verify_pending', 422);
+        $payments->verify($payment);
+
+        return back()->with('notice', $payment->fresh()->confirmed_at ? 'نتیجه بانک ثبت شد.' : 'پرداخت همچنان نیازمند بررسی است.');
+    }
+
+    public function saveGateway(Request $request, string $provider)
+    {
+        $this->authorizeAdmin('gateways');
+        $definition = Gateways::DEFINITIONS[$provider] ?? abort(404);
+        $fields = array_keys($definition['fields']);
+        $rules = [];
+        foreach ($fields as $field) {
+            $rules['credentials.'.$field] = ['nullable', 'string', 'max:255', 'not_regex:/[[:cntrl:]]/'];
+        }
+        $data = $request->validate(['enabled' => 'required|boolean', 'credentials' => ['sometimes', 'array:'.implode(',', $fields)]] + $rules);
+
+        DB::transaction(function () use ($provider, $definition, $data, $fields) {
+            $gateway = PaymentGateway::lockForUpdate()->find($provider) ?? new PaymentGateway(['provider' => $provider]);
+            $credentials = array_replace($gateway->credentials ?? [], array_filter($data['credentials'] ?? [], fn ($value) => filled($value)));
+            $checks = [];
+            foreach ($fields as $field) {
+                $checks[$field] = [$data['enabled'] ? 'required' : 'nullable', $definition['rules'][$field] ?? 'string'];
+            }
+            Validator::make($credentials, $checks, [], $definition['fields'])->validate();
+            if ($provider === 'melli' && isset($credentials['key']) && strlen((string) base64_decode($credentials['key'], true)) !== 24) {
+                throw ValidationException::withMessages(['credentials.key' => 'کلید ترمینال سداد باید Base64 متناظر با ۲۴ بایت باشد.']);
+            }
+            $gateway->fill(['enabled' => $data['enabled'], 'credentials' => $credentials])->save();
+        }, 3);
+        Log::notice('Payment gateway settings updated', ['provider' => $provider, 'user_id' => $request->user()->id, 'enabled' => (bool) $data['enabled']]);
+
+        return redirect()->route('admin.index', ['tab' => 'gateways'])->with('notice', 'تنظیمات درگاه ذخیره شد.');
+    }
+
+    public function role(Request $request, User $user)
+    {
+        $this->authorizeAdmin('users');
+        abort_if(StaffAccess::owner($user), 422);
+        $role = $request->validate(['role' => ['required', Rule::in(array_keys(StaffAccess::ROLES))]])['role'];
+        $previous = $user->role;
+        $user->forceFill(['role' => $role])->save();
+        Log::notice('User role updated', ['actor_id' => $request->user()->id, 'user_id' => $user->id, 'from' => $previous, 'to' => $role]);
+
+        return back()->with('notice', 'نقش کاربر ذخیره شد.');
     }
 
     public function export(Request $request)
     {
-        $this->authorizeAdmin();
+        $this->authorizeAdmin('finance');
         [$orders] = $this->orderQuery($request);
 
         return response()->streamDownload(function () use ($orders) {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['reference', 'status', 'total_toman', 'discount', 'tax', 'cost', 'created_at'], ',', '"', '');
-            foreach ($orders->orderBy('id')->cursor() as $order) {
-                $lines = json_decode($order->lines, true);
-                fputcsv($out, [$order->reference, $order->status, $order->total, array_sum(array_column($lines, 'discount')), array_sum(array_column($lines, 'tax')), array_sum(array_column($lines, 'cost')), $order->created_at], ',', '"', '');
+            fputcsv($out, ['reference', 'status', 'gateway', 'total_toman', 'gold', 'labor', 'profit', 'discount', 'tax', 'cost', 'margin', 'merchant_fee_rial', 'created_at', 'paid_at'], ',', '"', '');
+            foreach ($orders->withSum('payments', 'fee_rial')->lazyById(500) as $order) {
+                fputcsv($out, [
+                    $order->reference, $order->status, $order->gateway, $order->total,
+                    ...array_values($order->financials()), $order->payments_sum_fee_rial ?? 0,
+                    $order->created_at, $order->paid_at,
+                ], ',', '"', '');
             }
             fclose($out);
         }, 'barin-orders.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);

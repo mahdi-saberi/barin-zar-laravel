@@ -67,4 +67,6 @@ if (($argv[1] ?? '') === 'apache2-foreground'
     }
 }
 
-echo $mode;
+echo ($argv[1] ?? '') === '--scheduler'
+    ? (filter_var(Env::get('BARIN_RUN_SCHEDULER', true), FILTER_VALIDATE_BOOLEAN) ? 'yes' : 'no')
+    : $mode;
