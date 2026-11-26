@@ -5,7 +5,8 @@
             @php($promotion = $offer->data)
             <article @class(['campaign-card', 'campaign-with-image' => !empty($promotion['image'])])>
                 @if(!empty($promotion['image']))
-                    <img src="{{ $promotion['image'] }}" width="720" height="480" alt="" loading="lazy" decoding="async">
+                    <x-store-media :path="$promotion['image']" :alt="$promotion['image_alt'] ?? ''" :label="$promotion['name']"
+                        width="720" height="480" loading="lazy" decoding="async" />
                 @endif
                 <div class="campaign-copy">
                     <h3>{{ $promotion['name'] }}</h3>

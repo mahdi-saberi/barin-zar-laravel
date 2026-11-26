@@ -32,7 +32,11 @@ class CatalogTest extends TestCase
         $home->update(['data' => ['hero' => '/assets/campaign.webp'] + $home->data]);
         $this->get('/')->assertOk()->assertSee('src="/assets/barinzar-hero.webp"', false);
 
-        $home->update(['data' => ['hero' => '/assets/p1.webp'] + $home->data]);
+        $home->update(['data' => ['hero_alt' => 'بنر انتخاب‌شده'] + $home->data]);
+        $this->get('/')->assertOk()->assertSee('src="/assets/campaign.webp" alt="بنر انتخاب‌شده"', false)
+            ->assertDontSee('src="/assets/barinzar-hero.webp"', false);
+
+        $home->update(['data' => ['hero' => '/assets/p1.webp', 'hero_alt' => ''] + $home->data]);
         $this->get('/')->assertOk()->assertSee('src="/assets/p1.webp" alt="" fetchpriority="high"', false)
             ->assertDontSee('src="/assets/barinzar-hero.webp"', false);
 
@@ -119,6 +123,23 @@ class CatalogTest extends TestCase
         $this->get('/')->assertOk()
             ->assertSeeInOrder(['نرخ طلای ۱۸ عیار', '۱۰٬۵۰۰٬۰۰۰', 'نمونه'])
             ->assertDontSee('datetime=', false);
+    }
+
+    public function test_product_recommendations_fill_even_rows_with_available_alternatives(): void
+    {
+        $response = $this->get('/product/wave')->assertOk();
+        $recommendations = $response->viewData('products');
+        $this->assertCount(4, $recommendations);
+        $this->assertSame('bracelet', $recommendations->first()->data['category']);
+        $this->assertNotContains('wave', $recommendations->pluck('slug'));
+        $this->assertCount(4, $recommendations->pluck('data.images.0')->unique());
+
+        Entry::products()->whereNotIn('slug', ['wave', 'leaf', 'hoop', 'ring'])->delete();
+        $this->assertCount(2, $this->get('/product/wave')->assertOk()->viewData('products'));
+
+        Entry::products()->whereIn('slug', ['hoop', 'ring'])->delete();
+        $this->get('/product/wave')->assertOk()->assertDontSee('class="wrap section product-recommendations"', false)
+            ->assertSee('href="tel:+982155616452"', false);
     }
 
     public function test_drafts_stay_out_of_the_store_cart_and_sitemap(): void

@@ -69,6 +69,7 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::get('/image/{file}', [Admin::class, 'studioImage'])->name('admin.images.show');
     Route::post('/image/{file}/publish', [Admin::class, 'publishImage'])->name('admin.images.publish');
     Route::post('/upload', [Admin::class, 'upload'])->name('admin.upload');
+    Route::get('/media', [Admin::class, 'media'])->name('admin.media');
     Route::post('/orders/{id}', [Admin::class, 'status'])->name('admin.orders.status');
     Route::post('/payments/{payment}/check', [Admin::class, 'verifyPayment'])->middleware('throttle:12,1')->name('admin.payments.check');
     Route::post('/gateways/{provider}', [Admin::class, 'saveGateway'])->name('admin.gateways.save');

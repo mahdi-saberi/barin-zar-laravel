@@ -4,4 +4,11 @@
 .rich-content :is(h2, h3, h4) { font-size: 1.2em; }
 .rich-content blockquote { padding-inline-start: .8em; border-inline-start: 2px solid currentColor; }
 .rich-content a { text-decoration: underline; text-underline-offset: .2em; }
+.rich-content .ql-direction-ltr { direction: ltr; text-align: start; }
+.rich-content .ql-direction-rtl { direction: rtl; text-align: start; }
+.rich-content .ql-align-left { text-align: left; }
+.rich-content .ql-align-right { text-align: right; }
+.rich-content .ql-align-center { text-align: center; }
+.rich-content .ql-align-justify { text-align: justify; }
+.rich-content :is(img, video) { display: block; width: auto; max-width: 100%; height: auto; max-height: 480px; margin-block: .5em; object-fit: contain; }
 .rich-content > :last-child { margin-block-end: 0; }

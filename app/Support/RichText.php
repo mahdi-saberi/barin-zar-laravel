@@ -14,6 +14,7 @@ class RichText
     private const TAGS = [
         'p' => 'p', 'div' => 'div', 'h2' => 'h2', 'h3' => 'h3', 'h4' => 'h4',
         'b' => 'strong', 'strong' => 'strong', 'i' => 'em', 'em' => 'em', 'u' => 'u',
+        's' => 's', 'strike' => 's',
         'ul' => 'ul', 'ol' => 'ol', 'li' => 'li', 'blockquote' => 'blockquote',
     ];
 
@@ -36,7 +37,7 @@ class RichText
             return $value;
         }
 
-        $withSpaces = preg_replace('~</?(?:p|div|h[2-4]|li|ul|ol|blockquote)>|<br\s*/?>~i', ' ', $value);
+        $withSpaces = preg_replace('~</?(?:p|div|h[2-4]|li|ul|ol|blockquote|br|img|video)\b[^>]*>~i', ' ', $value);
 
         return Str::squish(html_entity_decode(strip_tags($withSpaces), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     }
@@ -74,6 +75,16 @@ class RichText
         if ($node->tagName === 'br') {
             return '<br>';
         }
+        if (in_array($node->tagName, ['img', 'video'], true)) {
+            $src = $node->getAttribute('src');
+            $type = Media::type($src);
+            if ($type === 'image' && $node->tagName === 'img') {
+                return '<img src="'.e($src).'" alt="'.e(Str::limit($node->getAttribute('alt'), 180, '')).'" loading="lazy" decoding="async">';
+            }
+
+            return $type === 'video' && $node->tagName === 'video'
+                ? '<video src="'.e($src).'" controls preload="metadata" playsinline></video>' : '';
+        }
 
         $content = self::children($node);
         if ($node->tagName === 'a') {
@@ -83,7 +94,21 @@ class RichText
         }
         $tag = self::TAGS[$node->tagName] ?? null;
 
-        return $tag ? '<'.$tag.'>'.$content.'</'.$tag.'>' : $content;
+        if (!$tag) {
+            return $content;
+        }
+
+        $classes = [];
+        if (in_array($tag, ['p', 'div', 'h2', 'h3', 'h4', 'li', 'blockquote'], true)) {
+            foreach (preg_split('/\s+/', trim($node->getAttribute('class'))) as $class) {
+                if (preg_match('/\Aql-(?:align-(?:left|right|center|justify)|direction-(?:ltr|rtl))\z/', $class)) {
+                    $classes[] = $class;
+                }
+            }
+        }
+        $attribute = $classes ? ' class="'.implode(' ', array_unique($classes)).'"' : '';
+
+        return '<'.$tag.$attribute.'>'.$content.'</'.$tag.'>';
     }
 
     private static function validLink(string $href): bool

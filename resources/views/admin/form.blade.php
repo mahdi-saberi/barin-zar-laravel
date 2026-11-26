@@ -3,7 +3,7 @@
         'product' => [
             'مشخصات محصول' => ['name', 'category', 'description', 'published'],
             'موجودی و قیمت‌گذاری' => ['stock', 'milligrams', 'labor', 'cost', 'profit_bps', 'discount_bps', 'tax_bps'],
-            'گالری تصاویر' => ['images', 'image_alts'],
+            'عکس و ویدئو' => ['media'],
         ],
         'page' => [
             'محتوای صفحه' => ['name', 'description', 'hero'],
@@ -49,11 +49,16 @@
     @foreach($groups as $legend => $names)
         <fieldset class="admin-card admin-fieldset">
             <legend>{{ $legend }}</legend>
-            @if($kind === 'product' && in_array('images', $names, true))
-                @include('admin.product-images')
-            @endif
             <div class="admin-fields">
-                @if($loop->first && $kind !== 'settings')
+                @if($loop->first && $kind === 'product')
+                    @if($entry)
+                        <label>شناسهٔ یکتای محصول
+                            <input dir="ltr" value="{{ $entry->slug }}" readonly>
+                        </label>
+                    @else
+                        <div class="admin-product-id"><span>شناسهٔ یکتای محصول</span><small>با اولین ذخیره به‌صورت خودکار ثبت می‌شود.</small></div>
+                    @endif
+                @elseif($loop->first && $kind !== 'settings')
                     @php($slugValue = $entry?->slug ?? old('slug', $newSlug))
                     <label>شناسه یکتا
                         <input dir="ltr" name="slug" value="{{ is_string($slugValue) ? $slugValue : '' }}" @readonly($entry !== null) required maxlength="{{ $kind === 'seo' ? 98 : 90 }}" pattern="[A-Za-z0-9_\-]+">

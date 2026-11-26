@@ -9,8 +9,21 @@
     <link rel="stylesheet" href="{{ asset('assets/modern.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/admin.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/rich-content.css') }}">
+    @php($hasEditor = !empty($formMode) && $tab !== 'seo')
+    @if($hasEditor)
+        <link rel="stylesheet" href="{{ asset('assets/vendor/quill-2.0.3/quill.snow.css') }}">
+        <script defer src="{{ asset('assets/vendor/quill-2.0.3/quill.js') }}"></script>
+    @endif
+    @if(!empty($hasMedia) || $hasEditor)
+        <link rel="stylesheet" href="{{ asset('assets/admin-content.css') }}?v={{ filemtime(public_path('assets/admin-content.css')) }}">
+    @endif
     <script defer src="{{ asset('assets/store.js') }}"></script>
-    <script defer src="{{ asset('assets/admin.js') }}?v={{ filemtime(public_path('assets/admin.js')) }}"></script>
+    @if(!empty($hasMedia))
+        <script defer src="{{ asset('assets/admin-media.js') }}?v={{ filemtime(public_path('assets/admin-media.js')) }}"></script>
+    @endif
+    @if($hasEditor)
+        <script defer src="{{ asset('assets/admin-editor.js') }}?v={{ filemtime(public_path('assets/admin-editor.js')) }}"></script>
+    @endif
 </head>
 <body class="admin-page {{ isset($tabs) ? 'admin-authenticated' : 'admin-guest' }}">
 <a class="skip" href="#main">رفتن به محتوا</a>
@@ -51,5 +64,7 @@
     @yield('content')
 </main>
 @endisset
+@if(!empty($hasMedia)) @include('admin.media-picker') @endif
+@if($hasEditor) @include('admin.link-editor') @endif
 </body>
 </html>

@@ -1,9 +1,11 @@
 @php
     $sections = array_unique(array_map('trim', explode(',', $page['sections'] ?? 'categories,products,campaigns,budget,guide')));
     $previews = $collections->filter(fn ($items) => $items->isNotEmpty());
+    $heroVideo = $homeHero && \App\Support\Media::type($homeHero) === 'video';
+    $guideMedia = ($page + ['guide_image' => '/assets/m2.webp'])['guide_image'];
 @endphp
 <section class="store-hero">
-    <div @class(['hero-inner', 'hero-text-only' => !$homeHero])>
+    <div @class(['hero-inner', 'hero-text-only' => !$homeHero, 'hero-with-video' => $heroVideo])>
         <div class="hero-copy">
             <p class="hero-eyebrow"><span class="foil-mark" aria-hidden="true"></span>{{ $page['badge'] ?? 'گالری طلای ۱۸ عیار · بازار تهران' }}</p>
             <h1>{{ $heading }}</h1>
@@ -18,8 +20,8 @@
             </div>
         </div>
         @if($homeHero)
-            <div class="hero-media">
-                <img src="{{ $homeHero }}" alt="" fetchpriority="high" width="1280" height="853">
+            <div @class(['hero-media', 'hero-media-video' => $heroVideo])>
+                <x-store-media :path="$homeHero" :alt="$page['hero_alt'] ?? ''" label="ویدئوی معرفی برین‌زر" fetchpriority="high" width="1280" height="853" />
             </div>
         @endif
     </div>
@@ -121,8 +123,11 @@
 
         @case('guide')
             <section class="wrap section">
-                <div class="guide-feature">
-                    <img src="{{ $page['guide_image'] ?? '/assets/m2.webp' }}" width="640" height="520" alt="" loading="lazy" decoding="async">
+                <div @class(['guide-feature', 'guide-text-only' => !$guideMedia])>
+                    @if($guideMedia)
+                        <x-store-media :path="$guideMedia" :alt="$page['guide_image_alt'] ?? ''"
+                            label="ویدئوی راهنمای خرید" width="640" height="520" loading="lazy" decoding="async" />
+                    @endif
                     <div class="guide-copy">
                         <h2>{{ $page['guide_heading'] ?? 'پیش از خرید' }}</h2>
                         <div class="guide-description rich-content">{{ \App\Support\RichText::render($page, 'guide_text', 'وزن، اندازه و ریز مبلغ هر قطعه را در صفحهٔ محصول ببینید.') }}</div>

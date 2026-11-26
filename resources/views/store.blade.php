@@ -1,5 +1,12 @@
 @php
     $data = $product?->data ?? $page;
+    $contact = config('barin.contact');
+    $catalogStory = $mode === 'catalog' ? config('barin.catalog') : null;
+    $catalogFamily = $catalogStory['collections'][$category] ?? [];
+    $catalogCover = $mode === 'catalog'
+        ? ($category ? ($catalogFamily['cover'] ?? $catalogStory['cover']) : ($page + ['hero' => $catalogStory['cover']])['hero'])
+        : null;
+    $catalogIntro = $catalogFamily['intro'] ?? ($catalogStory['intro'] ?? '');
     $catalogTitle = $category ? $categories[$category].' طلا' : ($page['name'] ?? 'ویترین طلا');
     $heading = match ($mode) {
         'home' => $page['name'] ?? 'طلایی که با شما می‌ماند',
@@ -14,8 +21,8 @@
     $pageNumber = $pagination?->currentPage() ?? 1;
     $title = ($seo['title'] ?? $heading.' | برین‌زر').($pageNumber > 1 ? ' · صفحه '.number_format($pageNumber) : '');
     $description = $seo['description'] ?? ($category
-        ? 'مدل‌های '.$categories[$category].' طلای ۱۸ عیار در برین‌زر.'
-        : \App\Support\RichText::text($data, 'description', 'خرید طلای ۱۸ عیار از برین‌زر در بازار تهران.'));
+        ? $catalogTitle.' در برین‌زر. '.$catalogIntro
+        : \App\Support\RichText::text($data, 'description', $catalogIntro ?: 'خرید طلای ۱۸ عیار از برین‌زر در بازار تهران.'));
     $canonical = $seo['canonical'] ?? (url()->current().($pageNumber > 1 ? '?page='.$pageNumber : ''));
     $settings = \App\Models\Entry::getData('settings', 'store');
     $active = $campaigns->filter(fn ($campaign) =>
@@ -23,11 +30,9 @@
         && ($mode !== 'product' || empty($campaign->data['product']) || $campaign->data['product'] === $slug)
     );
     $quote = $product ? $quotes[$slug] : null;
-    $homeHero = $page['hero'] ?? null;
-    if ($mode === 'home' && (!array_key_exists('hero', $page) || $homeHero === '/assets/campaign.webp')) {
-        $homeHero = '/assets/barinzar-hero.webp';
-    }
-    $ogImage = $data['images'][0] ?? $homeHero;
+    $homeHero = $mode === 'home' ? \App\Support\Media::homeHero($page) : ($page['hero'] ?? null);
+    $cover = $mode === 'catalog' ? $catalogCover : $homeHero;
+    $ogImage = $data['images'][0] ?? ($cover && \App\Support\Media::type($cover) !== 'video' ? $cover : null);
     $noindex = in_array($mode, ['cart', 'account', 'account-login', 'account-register', 'order'], true) || !empty($seo['noindex']);
     $theme = $active->first()?->data['theme'] ?? null;
     $brand = $settings['brand'] ?? null;
