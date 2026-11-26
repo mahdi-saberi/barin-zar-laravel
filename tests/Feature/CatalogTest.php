@@ -68,6 +68,39 @@ class CatalogTest extends TestCase
         $this->get('/shop/category/missing')->assertNotFound();
     }
 
+    public function test_weight_and_availability_filters_accept_existing_json_strings_and_preserve_pagination(): void
+    {
+        $rings = Entry::products()->where('data->category', 'ring')->orderBy('id')->get();
+        foreach ($rings as $position => $ring) {
+            $weight = match ($position) {
+                13 => 5999,
+                14 => 2999,
+                15 => 6000,
+                default => 3000 + $position,
+            };
+            $ring->update(['data' => [
+                'milligrams' => (string) $weight,
+                'stock' => $position === 16 ? '0' : '2',
+            ] + $ring->data]);
+        }
+
+        $filters = ['sort' => 'asc', 'weight' => '3-to-6', 'in_stock' => 1];
+        $url = route('shop.category', ['category' => 'ring'] + $filters);
+        $this->get(route('shop.index', ['category' => 'ring'] + $filters))->assertRedirect($url);
+
+        $first = $this->get($url)->assertOk()->viewData('pagination');
+        $this->assertSame(14, $first->total());
+        $this->assertCount(12, $first);
+        parse_str(parse_url($first->nextPageUrl(), PHP_URL_QUERY), $query);
+        $this->assertEquals($filters + ['page' => 2], $query);
+
+        $second = $this->get($first->nextPageUrl())->assertOk()->viewData('pagination');
+        $this->assertEqualsCanonicalizing($rings->take(14)->pluck('slug')->all(), $first->pluck('slug')->merge($second->pluck('slug'))->all());
+        $this->assertSame([$rings[14]->slug], $this->get('/shop/category/ring?weight=under-3')->assertOk()->viewData('pagination')->pluck('slug')->all());
+        $this->assertSame([$rings[15]->slug], $this->get('/shop/category/ring?weight=6-and-up')->assertOk()->viewData('pagination')->pluck('slug')->all());
+        $this->assertSame(17, $this->get('/shop/category/ring?weight[]=3-to-6&in_stock=false')->assertOk()->viewData('pagination')->total());
+    }
+
     public function test_store_rate_displays_persian_date_after_the_price_in_tehran_time(): void
     {
         config(['app.timezone' => 'UTC']);

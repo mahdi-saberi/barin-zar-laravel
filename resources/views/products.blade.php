@@ -1,9 +1,17 @@
-<div class="product-grid{{ !empty($preview) ? ' preview-grid' : '' }}" @if(!empty($preview)) role="region" aria-labelledby="{{ $headingId }}" tabindex="0" @endif>
+<div class="product-grid{{ !empty($preview) ? ' preview-grid' : '' }}">
     @forelse($products as $item)
-        @php($piece = $item->data)
+        @php
+            $piece = $item->data;
+            $alternate = $mode === 'catalog' ? ($piece['images'][1] ?? null) : null;
+        @endphp
         <article class="product">
             <a class="product-media" href="{{ route('product.show', $item->slug) }}" aria-label="{{ $piece['name'] }}{{ $piece['stock'] ? '' : '، ناموجود' }}">
                 <img src="{{ $piece['images'][0] }}" width="560" height="560" alt="{{ ($piece['image_alts'][0] ?? '') ?: $piece['name'] }}" loading="lazy" decoding="async">
+                @if($alternate && $alternate !== $piece['images'][0])
+                    <template data-product-alternate>
+                        <img class="product-alternate" src="{{ $alternate }}" width="560" height="560" alt="" decoding="async">
+                    </template>
+                @endif
                 @if(!$piece['stock'])<span class="product-unavailable">ناموجود</span>@endif
             </a>
             <div class="product-caption">

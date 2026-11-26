@@ -17,6 +17,12 @@ class Store extends Controller
 {
     private const CATALOG_PER_PAGE = 12;
 
+    private const WEIGHT_RANGES = [
+        'under-3' => ['label' => 'کمتر از ۳ گرم', 'min' => 1, 'max' => 2999],
+        '3-to-6' => ['label' => '۳ تا کمتر از ۶ گرم', 'min' => 3000, 'max' => 5999],
+        '6-and-up' => ['label' => '۶ گرم و بالاتر', 'min' => 6000, 'max' => null],
+    ];
+
     public function __construct(private readonly Pricing $pricing) {}
 
     public function goldRate(): JsonResponse
@@ -33,7 +39,9 @@ class Store extends Controller
         if ($category === null && is_string($legacyCategory) && $legacyCategory !== '') {
             abort_unless(isset($categories[$legacyCategory]), 404);
 
-            return redirect()->route('shop.category', ['category' => $legacyCategory] + $request->only(['q', 'max', 'sort', 'page']), 301);
+            $query = $request->only(['q', 'max', 'sort', 'weight', 'in_stock', 'page']);
+
+            return redirect()->route('shop.category', ['category' => $legacyCategory] + $query, 301);
         }
         abort_if($category !== null && ! isset($categories[$category]), 404);
 
@@ -63,10 +71,13 @@ class Store extends Controller
             case 'catalog':
                 $search = $request->query('q');
                 $sort = $request->query('sort');
+                $weight = $request->query('weight');
                 $filters = array_filter([
                     'q' => is_string($search) ? trim($search) : '',
                     'max' => max(0, $request->integer('max')),
                     'sort' => in_array($sort, ['asc', 'desc'], true) ? $sort : '',
+                    'weight' => is_string($weight) && isset(self::WEIGHT_RANGES[$weight]) ? $weight : '',
+                    'in_stock' => (int) $request->boolean('in_stock'),
                 ], fn ($value) => $value !== '' && $value !== 0);
                 $pagination = $this->catalogProducts($published, $category, $filters, $rate, $campaigns);
                 $products = $pagination->getCollection();
@@ -108,6 +119,7 @@ class Store extends Controller
             'categories', 'category', 'collections', 'pagination', 'filters'
         ) + [
             'checkoutKey' => $mode === 'cart' ? hash('sha256', json_encode([$cart->all(), $quotes->sortKeys()])) : null,
+            'weightRanges' => self::WEIGHT_RANGES,
         ]);
     }
 
@@ -118,6 +130,21 @@ class Store extends Controller
         }
         if (isset($filters['q'])) {
             $query->matching($filters['q'], ['data->name']);
+        }
+        $grammar = $query->getQuery()->getGrammar();
+        if (isset($filters['weight'])) {
+            $range = self::WEIGHT_RANGES[$filters['weight']];
+            $column = $grammar->wrap('data->milligrams');
+            // Existing products can store weight and stock as JSON strings.
+            $weight = "cast($column as decimal(12, 0))";
+            $query->whereRaw("$weight >= ?", [$range['min']]);
+            if ($range['max'] !== null) {
+                $query->whereRaw("$weight <= ?", [$range['max']]);
+            }
+        }
+        if (isset($filters['in_stock'])) {
+            $column = $grammar->wrap('data->stock');
+            $query->whereRaw("cast($column as decimal(12, 0)) > 0");
         }
         if (isset($filters['max']) || isset($filters['sort'])) {
             // The final price depends on the current rate and active discounts.

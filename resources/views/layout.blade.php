@@ -14,7 +14,7 @@
     <script defer src="{{ asset('assets/store.js') }}"></script>
     @if($schema)<script type="application/ld+json">{!! json_encode($schema, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!}</script>@endif
 </head>
-<body @class(['home-page' => $mode === 'home', 'theme-'.$theme => $theme])>
+<body @class(['home-page' => $mode === 'home', 'home-with-hero' => $mode === 'home' && $homeHero, 'theme-'.$theme => $theme])>
 <a class="skip" href="#main">رفتن به محتوا</a>
 <header class="store-header">
     @include('store.rate-bar')
