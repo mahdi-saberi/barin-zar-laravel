@@ -1,11 +1,12 @@
 .admin-page {
-    --admin-bg: #f6f5f0;
-    --admin-border: #e5e4dc;
-    --admin-ink: #212d27;
-    --admin-muted: #59675e;
-    --admin-pine: #214538;
-    --admin-dark: #192e26;
+    --admin-bg: #f7f5f1;
+    --admin-border: #e5e0d7;
+    --admin-ink: #182533;
+    --admin-muted: #576272;
+    --admin-pine: #243448;
+    --admin-dark: #142231;
     --admin-gold: #d7b477;
+    --pine: var(--admin-pine);
     color: var(--admin-ink);
     background: var(--admin-bg);
     font-size: 15px;
@@ -41,8 +42,8 @@
     padding: 8px 11px;
     color: #e0e9e2;
 }
-.admin-nav a:hover { background: #253f34; }
-.admin-nav a[aria-current="page"] { color: #fff; background: #2e4d3e; border-inline-start-color: var(--admin-gold); font-weight: 720; }
+.admin-nav a:hover { background: #26364a; }
+.admin-nav a[aria-current="page"] { color: #fff; background: #2d425a; border-inline-start-color: var(--admin-gold); font-weight: 720; }
 .admin-store-link { align-self: start; display: flex; gap: 9px; margin-block-start: auto; padding: 6px; color: #f2d8a8; }
 .admin-store-link:hover, .admin-text-link:hover, .admin-back-link:hover { text-decoration: underline; text-underline-offset: 4px; }
 
@@ -78,9 +79,9 @@
     line-height: 1.5;
     white-space: nowrap;
 }
-.admin-button:hover { background: #eef3ef; border-color: #a1b1a4; }
+.admin-button:hover { background: #eef1f4; border-color: #9da9b7; }
 .admin-primary { background: var(--admin-pine); color: #fff; border-color: var(--admin-pine); }
-.admin-primary:hover { background: #2d5948; border-color: #2d5948; }
+.admin-primary:hover { background: var(--admin-dark); border-color: var(--admin-dark); }
 .admin-button-small { min-height: 34px; padding: 4px 9px; font-size: 13px; }
 .admin-row-link { background: transparent; border-color: transparent; }
 .admin-danger { background: #a13a32; border-color: #a13a32; color: #fff; }
@@ -122,7 +123,7 @@ ul.admin-message { padding-inline-start: 32px; }
 .admin-table-scroll { overflow-x: auto; }
 .admin-table { font-size: 14px; }
 .admin-table th, .admin-table td { padding: 10px 11px; border-bottom: 1px solid #eeefe9; }
-.admin-table thead th { color: #4e6054; background: #f2f4ef; font-weight: 700; white-space: nowrap; }
+.admin-table thead th { color: #475366; background: #eff1f4; font-weight: 700; white-space: nowrap; }
 .admin-table thead th:first-child { border-start-start-radius: 8px; }
 .admin-table thead th:last-child { border-start-end-radius: 8px; }
 .admin-table tbody tr:last-child > * { border-bottom-color: transparent; }

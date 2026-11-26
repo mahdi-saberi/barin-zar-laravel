@@ -26,6 +26,20 @@ class CatalogTest extends TestCase
         }
     }
 
+    public function test_default_home_banner_updates_and_custom_hero_is_preserved(): void
+    {
+        $home = Entry::where('kind', 'page')->where('slug', 'home')->firstOrFail();
+        $home->update(['data' => ['hero' => '/assets/campaign.webp'] + $home->data]);
+        $this->get('/')->assertOk()->assertSee('src="/assets/barinzar-hero.webp"', false);
+
+        $home->update(['data' => ['hero' => '/assets/p1.webp'] + $home->data]);
+        $this->get('/')->assertOk()->assertSee('src="/assets/p1.webp" alt="" fetchpriority="high"', false)
+            ->assertDontSee('src="/assets/barinzar-hero.webp"', false);
+
+        $home->update(['data' => ['hero' => null] + $home->data]);
+        $this->get('/')->assertOk()->assertSee('hero-text-only')->assertDontSee('class="hero-media"', false);
+    }
+
     public function test_category_and_price_filters_apply_before_pagination(): void
     {
         $filters = ['q' => 'انگشتر', 'max' => 100000000, 'sort' => 'asc'];
@@ -59,8 +73,9 @@ class CatalogTest extends TestCase
         $product = Entry::products()->where('slug', 'ring')->firstOrFail();
         $product->update(['data' => ['published' => false] + $product->data]);
 
-        $this->get('/')->assertOk()->assertDontSee('href="/product/ring"', false);
-        $this->get('/shop/category/ring')->assertOk()->assertDontSee('href="/product/ring"', false);
+        $productLink = 'href="'.route('product.show', 'ring').'"';
+        $this->get('/')->assertOk()->assertDontSee($productLink, false);
+        $this->get('/shop/category/ring')->assertOk()->assertDontSee($productLink, false);
         $this->get('/product/ring')->assertNotFound();
         $this->post('/cart/ring')->assertNotFound();
         $this->get('/sitemap.xml')->assertOk()->assertSee('/shop/category/ring')->assertDontSee('/product/ring');

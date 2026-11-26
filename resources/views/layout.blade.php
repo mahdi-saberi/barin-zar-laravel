@@ -1,35 +1,79 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ?? 'برین‌زر' }}</title>
-    <meta name="description" content="{{ $description ?? '' }}">
-    <meta name="robots" content="{{ !empty($noindex) ? 'noindex,follow' : 'index,follow' }}">
-    <link rel="canonical" href="{{ $canonical ?? url()->current() }}">
-    <meta property="og:title" content="{{ $title ?? 'برین‌زر' }}">
-    <meta property="og:description" content="{{ $description ?? '' }}">
-    @if(!empty($ogImage))<meta property="og:image" content="{{ url($ogImage) }}">@endif
-    <link rel="stylesheet" href="{{ asset('assets/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/modern.css') }}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ $title }}</title>
+    <meta name="description" content="{{ $description }}">
+    <meta name="robots" content="{{ $noindex ? 'noindex,follow' : 'index,follow' }}">
+    <link rel="canonical" href="{{ $canonical }}">
+    <meta property="og:title" content="{{ $title }}">
+    <meta property="og:description" content="{{ $description }}">
+    @if($ogImage)<meta property="og:image" content="{{ url($ogImage) }}">@endif
+    <link rel="stylesheet" href="{{ asset('assets/storefront.css') }}">
     <script defer src="{{ asset('assets/store.js') }}"></script>
-    @if(!empty($schema))<script type="application/ld+json">{!! json_encode($schema, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!}</script>@endif
+    @if($schema)<script type="application/ld+json">{!! json_encode($schema, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!}</script>@endif
 </head>
-<body class="{{ !empty($theme) ? 'theme-'.$theme : '' }}">
+<body class="{{ $theme ? 'theme-'.$theme : '' }}">
 <a class="skip" href="#main">رفتن به محتوا</a>
-<div class="top">{{ $brand ?? 'گالری طلای برین‌زر' }} · بازار تهران
-@if(!empty($rate['value'])) · {{ match($rate['source']) {'api' => 'آخرین نرخ دریافت‌شده', 'manual' => 'نرخ دستی', default => 'نرخ نمونه'} }} ۱۸ عیار {{ number_format($rate['value']) }} تومان / گرم
-@if($rate['source'] === 'api') · <time datetime="{{ $rate['timestamp'] }}">{{ \Illuminate\Support\Carbon::parse($rate['timestamp'])->timezone(config('app.timezone'))->format('Y/m/d H:i') }}</time>@endif
-@endif</div>
-<header class="head wrap">
-<a class="brand" href="/"><img src="{{ asset('assets/logo.webp') }}" alt="{{ $brand ?? 'برین‌زر' }}" width="76" height="56"></a>
-<nav class="nav" aria-label="منوی اصلی"><a href="/shop">ویترین طلا</a><a href="/#offers">پیشنهادها</a><a href="/page/guide">راهنمای خرید</a></nav>
-<a class="basket" href="/cart">سبد خرید {{ isset($cart) ? '('.$cart->count().')' : '' }}</a>
+<header class="store-header">
+    @if(!empty($rate['value']))
+        <div class="rate-bar">
+            <span class="foil-mark" aria-hidden="true"></span>
+            <span>{{ match($rate['source'] ?? '') { 'api' => 'آخرین نرخ دریافتی طلای ۱۸ عیار', 'manual' => 'نرخ دستی طلای ۱۸ عیار', default => 'نرخ نمونهٔ طلای ۱۸ عیار' } }}</span>
+            <strong><bdi>{{ number_format($rate['value']) }}</bdi> تومان / گرم</strong>
+            @if(($rate['source'] ?? '') === 'api' && !empty($rate['timestamp']))
+                <time dir="ltr" datetime="{{ $rate['timestamp'] }}">{{ \Illuminate\Support\Carbon::parse($rate['timestamp'])->timezone(config('app.timezone'))->format('Y/m/d H:i') }}</time>
+            @endif
+        </div>
+    @endif
+    <div class="site-masthead wrap">
+        <form class="site-search" role="search" method="get" action="{{ route('shop.index') }}">
+            <input type="search" name="q" aria-label="جست‌وجو در محصولات" value="{{ $filters['q'] ?? '' }}" placeholder="جست‌وجو در محصولات">
+            <button type="submit" aria-label="جست‌وجو"><span class="search-mark" aria-hidden="true"></span></button>
+        </form>
+        <a class="site-brand" href="{{ route('home') }}">
+            <img src="{{ asset('assets/logo.webp') }}" alt="{{ $brand ?? 'برین‌زر' }}" width="125" height="91">
+        </a>
+        <a class="site-basket" href="{{ url('/cart') }}" aria-label="سبد خرید، {{ $cart->count() }} محصول">
+            <span class="bag-mark" aria-hidden="true"></span>
+            <span class="basket-label">سبد خرید</span>
+            <span class="basket-count" aria-hidden="true">{{ $cart->count() }}</span>
+        </a>
+    </div>
+    <nav class="store-nav" aria-label="انواع طلا">
+        <div class="wrap">
+            <a href="{{ route('shop.index', $filters) }}" @if($mode === 'catalog' && !$category) aria-current="page" @endif>همهٔ طلاها</a>
+            @foreach($categories as $key => $label)
+                <a href="{{ route('shop.category', ['category' => $key] + $filters) }}" @if($mode === 'catalog' && $category === $key) aria-current="page" @endif>{{ $label }}</a>
+            @endforeach
+        </div>
+    </nav>
 </header>
-<main class="wrap" id="main">
-@if(session('notice'))<p role="status" class="notice">{{ session('notice') }}</p>@endif
-@if($errors->any())<ul class="notice errors" role="alert">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>@endif
-@yield('content')
+<main id="main">
+    @if(session('notice') || $errors->any())
+        <div class="wrap feedback">
+            @if(session('notice'))<p class="notice" role="status">{{ session('notice') }}</p>@endif
+            @if($errors->any())
+                <ul class="notice errors" role="alert">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+            @endif
+        </div>
+    @endif
+    @yield('content')
 </main>
-<footer class="foot"><div class="wrap split"><div><strong>{{ $brand ?? 'گالری برین‌زر' }}</strong><br><small>{{ $footer ?? 'گالری طلای بازار تهران' }}</small></div><div class="row"><a href="/page/guide">راهنمای خرید</a><a href="/admin">مدیریت</a></div></div></footer>
+<footer class="store-footer">
+    <div class="wrap footer-inner">
+        <div class="footer-brand">
+            <span class="foil-mark" aria-hidden="true"></span>
+            <strong>{{ $brand ?? 'گالری طلای برین‌زر' }}</strong>
+            <p>{{ $footer ?? 'گالری طلای ۱۸ عیار در بازار تهران' }}</p>
+        </div>
+        <nav class="footer-links" aria-label="پیوندهای فروشگاه">
+            <a href="{{ route('shop.index') }}">ویترین طلا</a>
+            <a href="{{ route('page.show', 'guide') }}">راهنمای خرید</a>
+            <a href="{{ route('admin.index') }}">مدیریت</a>
+        </nav>
+    </div>
+</footer>
 </body>
 </html>
