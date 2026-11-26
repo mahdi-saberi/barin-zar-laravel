@@ -28,7 +28,7 @@
                 <a href="{{ route('shop.category', ['category' => $key] + $filters) }}" @if($mode === 'catalog' && $category === $key) aria-current="page" @endif>{{ $label }}</a>
             @endforeach
         </nav>
-        <form class="site-search" role="search" method="get" action="{{ route('shop.index') }}">
+        <form class="site-search" role="search" method="get" action="{{ route('shop.index', [], false) }}">
             <input type="search" name="q" aria-label="جست‌وجو در محصولات" value="{{ $filters['q'] ?? '' }}" placeholder="جست‌وجو در محصولات">
             <button type="submit" aria-label="جست‌وجو"><span class="search-mark" aria-hidden="true"></span></button>
         </form>

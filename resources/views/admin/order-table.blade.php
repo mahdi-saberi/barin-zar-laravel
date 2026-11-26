@@ -44,7 +44,7 @@
                 @if($showDetails)
                     <td>
                         @if($actions)
-                            <form class="admin-status-form" method="post" action="{{ route('admin.orders.status', $order->id) }}">
+                            <form class="admin-status-form" method="post" action="{{ route('admin.orders.status', $order->id, false) }}">
                                 @csrf
                                 <select name="status" aria-label="وضعیت جدید سفارش" required>
                                     <option value="">انتخاب اقدام</option>

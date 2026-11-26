@@ -32,7 +32,7 @@
                 <div class="detail-price"><strong><bdi>{{ number_format($quote['total']) }}</bdi></strong> تومان</div>
             @endif
             @if($data['stock'] > 0 && !empty($rate['value']))
-                <form method="post" action="{{ url('/cart/'.$slug) }}">
+                <form method="post" action="{{ route('cart.change', $slug, false) }}">
                     @csrf
                     <button class="button purchase-button" type="submit">افزودن به سبد خرید</button>
                 </form>

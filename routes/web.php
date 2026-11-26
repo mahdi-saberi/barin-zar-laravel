@@ -13,8 +13,8 @@ Route::get('/gold-rate', [Store::class, 'goldRate'])->name('shop.gold-rate');
 Route::get('/cart', fn (Request $request, Store $store) => $store->show($request, 'cart'));
 Route::get('/product/{slug}', fn (Request $request, Store $store, string $slug) => $store->show($request, 'product', $slug))->name('product.show');
 Route::get('/page/{slug}', fn (Request $request, Store $store, string $slug) => $store->show($request, 'page', $slug))->name('page.show');
-Route::post('/cart/{slug}', [Store::class, 'changeCart'])->block();
-Route::post('/order', [Store::class, 'order'])->middleware('throttle:8,1')->block();
+Route::post('/cart/{slug}', [Store::class, 'changeCart'])->block()->name('cart.change');
+Route::post('/order', [Store::class, 'order'])->middleware('throttle:8,1')->block()->name('order.store');
 Route::get('/robots.txt', fn () => response("User-agent: *\nDisallow: /admin\nDisallow: /cart\nSitemap: ".url('/sitemap.xml')."\n", 200, ['Content-Type' => 'text/plain']));
 Route::get('/sitemap.xml', function () {
     $settings = Entry::where('kind', 'seo')->get()->keyBy('slug');

@@ -32,7 +32,7 @@
             <span>مدیریت فروشگاه</span>
             <div class="admin-account">
                 <strong>{{ auth()->user()->name }}</strong>
-                <form method="post" action="{{ route('admin.logout') }}">
+                <form method="post" action="{{ route('admin.logout', [], false) }}">
                     @csrf
                     <button class="admin-button admin-button-small" type="submit">خروج</button>
                 </form>
