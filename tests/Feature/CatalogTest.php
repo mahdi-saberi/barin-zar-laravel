@@ -68,6 +68,26 @@ class CatalogTest extends TestCase
         $this->get('/shop/category/missing')->assertNotFound();
     }
 
+    public function test_store_rate_displays_persian_date_after_the_price_in_tehran_time(): void
+    {
+        config(['app.timezone' => 'UTC']);
+        $timestamp = '2026-03-20T20:45:00+00:00';
+        Entry::putData('rate', 'latest', ['value' => 25778000, 'source' => 'api', 'timestamp' => $timestamp]);
+
+        $this->get('/')->assertOk()
+            ->assertSeeInOrder(['نرخ طلای ۱۸ عیار', '۲۵٬۷۷۸٬۰۰۰', '۱۴۰۵/۰۱/۰۱ ۰۰:۱۵'])
+            ->assertSee('datetime="'.$timestamp.'"', false);
+    }
+
+    public function test_store_rate_identifies_sample_values_without_inventing_a_timestamp(): void
+    {
+        Entry::putData('rate', 'latest', ['value' => 10500000, 'source' => 'sample']);
+
+        $this->get('/')->assertOk()
+            ->assertSeeInOrder(['نرخ طلای ۱۸ عیار', '۱۰٬۵۰۰٬۰۰۰', 'نمونه'])
+            ->assertDontSee('<time', false);
+    }
+
     public function test_drafts_stay_out_of_the_store_cart_and_sitemap(): void
     {
         $product = Entry::products()->where('slug', 'ring')->firstOrFail();

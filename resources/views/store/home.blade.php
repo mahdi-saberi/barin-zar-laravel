@@ -51,7 +51,6 @@
             <section class="wrap section home-collections" aria-labelledby="collection-heading">
                 <div class="section-heading">
                     <h2 id="collection-heading">{{ $page['products_heading'] ?? 'منتخب گالری' }}</h2>
-                    <a class="text-link" href="{{ route('shop.index') }}">رفتن به ویترین <span aria-hidden="true">←</span></a>
                 </div>
                 @if($previews->isNotEmpty())
                     <div class="collection-tabs" data-collection-tabs aria-label="انتخاب دسته برای پیش‌نمایش">
@@ -94,7 +93,6 @@
                 <div class="guide-feature">
                     <img src="{{ $page['guide_image'] ?? '/assets/m2.webp' }}" width="640" height="520" alt="" loading="lazy" decoding="async">
                     <div class="guide-copy">
-                        <span class="foil-mark" aria-hidden="true"></span>
                         <h2>{{ $page['guide_heading'] ?? 'پیش از خرید' }}</h2>
                         <p>{{ $page['guide_text'] ?? 'وزن، اندازه و ریز مبلغ هر قطعه را در صفحهٔ محصول ببینید.' }}</p>
                         <a class="text-link" href="{{ route('page.show', 'guide') }}">راهنمای خرید <span aria-hidden="true">←</span></a>

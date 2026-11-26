@@ -14,17 +14,25 @@
     <script defer src="{{ asset('assets/store.js') }}"></script>
     @if($schema)<script type="application/ld+json">{!! json_encode($schema, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!}</script>@endif
 </head>
-<body class="{{ $theme ? 'theme-'.$theme : '' }}">
+<body @class(['home-page' => $mode === 'home', 'theme-'.$theme => $theme])>
 <a class="skip" href="#main">رفتن به محتوا</a>
 <header class="store-header">
     @if(!empty($rate['value']))
+        @php
+            $updated = \App\Support\PersianFormat::dateTime($rate['timestamp'] ?? null);
+            $rateSource = match ($rate['source'] ?? '') {
+                'api' => null,
+                'manual' => 'دستی',
+                default => 'نمونه',
+            };
+        @endphp
         <div class="rate-bar">
-            <span class="foil-mark" aria-hidden="true"></span>
-            <span>{{ match($rate['source'] ?? '') { 'api' => 'آخرین نرخ دریافتی طلای ۱۸ عیار', 'manual' => 'نرخ دستی طلای ۱۸ عیار', default => 'نرخ نمونهٔ طلای ۱۸ عیار' } }}</span>
-            <strong><bdi>{{ number_format($rate['value']) }}</bdi> تومان / گرم</strong>
-            @if(($rate['source'] ?? '') === 'api' && !empty($rate['timestamp']))
-                <time dir="ltr" datetime="{{ $rate['timestamp'] }}">{{ \Illuminate\Support\Carbon::parse($rate['timestamp'])->timezone(config('app.timezone'))->format('Y/m/d H:i') }}</time>
+            <span>نرخ طلای ۱۸ عیار</span>
+            <strong><bdi>{{ \App\Support\PersianFormat::number((int) $rate['value']) }}</bdi> تومان / گرم</strong>
+            @if($updated)
+                <time dir="ltr" datetime="{{ $rate['timestamp'] }}" title="آخرین به‌روزرسانی به وقت تهران">{{ $updated }}</time>
             @endif
+            @if($rateSource)<small class="rate-source">{{ $rateSource }}</small>@endif
         </div>
     @endif
     <div class="site-masthead wrap">
