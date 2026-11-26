@@ -13,6 +13,7 @@ use App\Services\Payments\Gateways;
 use App\Services\Pricing;
 use App\Services\RateUpdater;
 use App\Support\IranianIdentity;
+use App\Support\Media;
 use App\Support\RichText;
 use App\Support\StaffAccess;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,6 +25,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -93,7 +95,7 @@ class Admin extends Controller
         return [
             'page' => [
                 'name' => ['عنوان', 'required|string|max:140'], 'description' => ['متن', 'nullable|string|max:12000', 'richtext'],
-                'hero' => ['آدرس تصویر', 'nullable|string|max:500'], 'badge' => ['بالانویس', 'nullable|string|max:120'],
+                'hero' => ['رسانهٔ سربرگ', 'nullable|string|max:500', 'media'], 'badge' => ['بالانویس', 'nullable|string|max:120'],
                 'button' => ['متن دکمه اصلی', 'nullable|string|max:80'],
                 'products_heading' => ['عنوان مجموعه‌های طلا', 'nullable|string|max:100'],
                 'budget_heading' => ['عنوان بخش بودجه', 'nullable|string|max:100'],
@@ -101,7 +103,7 @@ class Admin extends Controller
                 'budget_high' => ['بودجه دوم (تومان)', 'nullable|integer|between:1,100000000000', 'number'],
                 'guide_heading' => ['عنوان بخش راهنما', 'nullable|string|max:100'],
                 'guide_text' => ['متن بخش راهنما', 'nullable|string|max:500', 'richtext'],
-                'guide_image' => ['تصویر بخش راهنما', 'nullable|string|max:500'],
+                'guide_image' => ['رسانهٔ راهنما', 'nullable|string|max:500', 'media'],
                 'sections' => ['ترتیب بخش‌ها (categories, products, campaigns, budget, guide)', 'nullable|string|max:160'],
             ],
             'product' => [
@@ -114,8 +116,7 @@ class Admin extends Controller
                 'discount_bps' => ['تخفیف اجرت و سود (۷۰۰ معادل ۷٪)', 'required|integer|between:0,10000', 'number'],
                 'tax_bps' => ['مالیات تنظیم‌شده بر اجرت و سود (۷۰۰ معادل ۷٪)', 'required|integer|between:0,10000', 'number'],
                 'stock' => ['موجودی', 'required|integer|between:0,100000', 'number'],
-                'images' => ['آدرس تصاویر، هر سطر یک عکس و عکس اول بندانگشتی', 'required|string|max:6000', 'textarea'],
-                'image_alts' => ['متن جایگزین هر عکس، سطر به سطر', 'nullable|string|max:1800', 'textarea'],
+                'media' => ['گالری محصول', 'sometimes|required|string|max:16000', 'gallery'],
                 'published' => ['نمایش در ویترین فروشگاه', 'sometimes|required|boolean', 'checkbox'],
             ],
             'seo' => [
@@ -125,7 +126,7 @@ class Admin extends Controller
             ],
             'campaign' => [
                 'name' => ['عنوان', 'required|string|max:140'], 'description' => ['پیام', 'nullable|string|max:500', 'richtext'],
-                'image' => ['آدرس بنر', 'nullable|string|max:500'], 'link' => ['مسیر داخلی دکمه', 'nullable|string|max:500'],
+                'image' => ['رسانهٔ بنر', 'nullable|string|max:500', 'media'], 'link' => ['مسیر داخلی دکمه', 'nullable|string|max:500'],
                 'start' => ['شروع', 'required|date_format:Y-m-d', 'date'], 'end' => ['پایان', 'required|date_format:Y-m-d|after_or_equal:start', 'date'],
                 'placement' => ['جایگاه', 'required|in:home,product,both', 'placement'],
                 'product' => ['شناسه محصول هدف، خالی برای همه', 'nullable|alpha_dash:ascii|max:90'],
@@ -156,7 +157,7 @@ class Admin extends Controller
             'finance' => $this->finance($request),
             'customers', 'users' => $this->directory($request, $tab === 'customers'),
             'gateways' => ['gatewayDefinitions' => Gateways::DEFINITIONS, 'gatewayRecords' => PaymentGateway::all()->keyBy('provider')],
-            'studio' => ['presets' => $this->studio->presets()],
+            'studio' => [],
             'settings' => [
                 'kind' => 'settings',
                 'fields' => $this->fields()['settings'],
@@ -169,6 +170,8 @@ class Admin extends Controller
             default => $this->entryPanel($request, $tab),
         };
 
+        $hasMedia = $tab === 'studio' || (!empty($data['formMode']) && in_array($tab, ['product', 'page', 'campaign'], true));
+
         return view('admin.index', $data + [
             'tab' => $tab,
             'tabs' => array_filter(self::TABS, fn ($key) => StaffAccess::allows(Auth::user(), self::ACCESS[$key]), ARRAY_FILTER_USE_KEY),
@@ -176,6 +179,8 @@ class Admin extends Controller
             'transitions' => Order::TRANSITIONS,
             'corePages' => self::CORE_PAGES,
             'categories' => config('barin.categories'),
+            'hasMedia' => $hasMedia,
+            'presets' => $hasMedia ? $this->studio->presets() : [],
             'can' => collect(['content', 'orders', 'finance', 'fulfill', 'settings'])->mapWithKeys(
                 fn ($permission) => [$permission => StaffAccess::allows(Auth::user(), $permission)]
             )->all(),
@@ -380,9 +385,18 @@ class Admin extends Controller
         $this->authorizeAdmin($kind === 'settings' ? 'settings' : 'content');
         $fields = $this->fields()[$kind] ?? abort(404);
         $slugLimit = $kind === 'seo' ? 98 : 90;
-        $rules = ['slug' => 'required|alpha_dash:ascii|max:'.$slugLimit, 'edit' => 'nullable|alpha_dash:ascii|max:'.$slugLimit];
+        $rules = [
+            'slug' => ($kind === 'product' ? 'nullable' : 'required').'|alpha_dash:ascii|max:'.$slugLimit,
+            'edit' => 'nullable|alpha_dash:ascii|max:'.$slugLimit,
+        ];
         if ($kind === 'product') {
             $rules['original_stock'] = 'required_with:edit|nullable|integer|min:0';
+            $rules['images'] = 'required_without:media|nullable|string|max:6000';
+            $rules['image_alts'] = 'nullable|string|max:1800';
+        }
+        $mediaFields = array_keys(array_filter($fields, fn ($field) => ($field[2] ?? '') === 'media'));
+        foreach ($mediaFields as $name) {
+            $rules[$name.'_alt'] = 'nullable|string|max:180';
         }
         $richRules = array_map(fn ($field) => $field[1], array_filter($fields, fn ($field) => ($field[2] ?? '') === 'richtext'));
         foreach (array_keys($richRules) as $name) {
@@ -404,43 +418,43 @@ class Admin extends Controller
                 $validated[$name] = RichText::sanitize($validated[$name] ?? '');
             }
             $text[$name] = RichText::text($validated, $name);
-            if ($text[$name] === '') {
+            if ($text[$name] === '' && !preg_match('/<(?:img|video)\s/', $validated[$name] ?? '')) {
                 $validated[$name] = null;
             }
         }
         Validator::make($text, $richRules, [], $labels)->validate();
-        $slug = $kind === 'settings' ? 'store' : $validated['slug'];
         $edit = $validated['edit'] ?? null;
+        $slug = $kind === 'settings' ? 'store' : ($validated['slug'] ?? $edit);
+        if ($kind === 'product' && $slug === null) {
+            $stem = Str::slug($validated['name']);
+            $slug = rtrim(substr($stem, 0, 63), '-') ?: $validated['category'];
+            $slug .= '-'.strtolower((string) Str::ulid());
+        }
         $originalStock = (int) ($validated['original_stock'] ?? 0);
         unset($validated['slug'], $validated['edit'], $validated['original_stock']);
 
+        $legacyGallery = $kind === 'product' && !isset($validated['media']);
         if ($kind === 'product') {
             foreach (['milligrams', 'labor', 'cost', 'profit_bps', 'discount_bps', 'tax_bps', 'stock'] as $field) {
                 $validated[$field] = (int) $validated[$field];
             }
-            // Keep each description aligned with its image when a blank line is skipped.
-            $images = array_map('trim', preg_split('/\r\n|\r|\n/', $validated['images']));
-            $alts = preg_split('/\r\n|\r|\n/', $validated['image_alts'] ?? '');
-            $images = array_filter($images, fn (string $path) => $path !== '');
-            if (count($images) < 1 || count($images) > 16) {
-                throw ValidationException::withMessages(['images' => 'یک تا ۱۶ آدرس تصویر وارد کنید.']);
-            }
-            $validated['images'] = array_values($images);
-            $validated['image_alts'] = array_map(fn (int $i) => trim($alts[$i] ?? ''), array_keys($images));
+            $validated = array_replace($validated, Media::productFields($validated));
             if (array_key_exists('published', $validated)) {
                 $validated['published'] = (bool) $validated['published'];
             }
         }
-        foreach (['images', 'hero', 'guide_image', 'image', 'link'] as $field) {
-            foreach ((array) ($validated[$field] ?? []) as $path) {
-                if ($path && (! str_starts_with($path, '/') || preg_match('~^//|[\\\\\s<>]~', $path))) {
-                    throw ValidationException::withMessages([$field => 'یک مسیر داخلی مانند /assets/example.webp وارد کنید.']);
-                }
+        foreach ($mediaFields as $field) {
+            $path = $validated[$field] ?? null;
+            if ($path && !Media::localPath($path)) {
+                throw ValidationException::withMessages([$field => 'یک فایل از کتابخانه رسانه انتخاب کنید.']);
             }
+        }
+        if (!empty($validated['link']) && !Media::localPath($validated['link'])) {
+            throw ValidationException::withMessages(['link' => 'مسیر داخلی دکمه را وارد کنید.']);
         }
 
         try {
-            DB::transaction(function () use ($kind, $slug, $edit, $originalStock, $validated) {
+            DB::transaction(function () use ($kind, $slug, $edit, $originalStock, $validated, $legacyGallery) {
                 if ($kind === 'settings') {
                     $settings = Entry::where(compact('kind', 'slug'))->lockForUpdate()->first();
                     $data = $settings?->data ?? [];
@@ -461,6 +475,16 @@ class Admin extends Controller
                 abort_unless($slug === $edit, 422);
                 $entry = Entry::where(compact('kind', 'slug'))->lockForUpdate()->firstOrFail();
                 $data = $entry->data;
+                if ($legacyGallery && isset($data['media'])) {
+                    foreach ($data['media'] as $item) {
+                        if (Media::type($item['path']) === 'video') {
+                            $validated['media'][] = $item;
+                        }
+                    }
+                    if (count($validated['media']) > Media::LIMIT) {
+                        throw ValidationException::withMessages(['images' => 'گالری محصول حداکثر ۱۶ عکس و ویدئو دارد.']);
+                    }
+                }
                 if ($kind === 'product' && (int) $data['stock'] !== $originalStock) {
                     if ($validated['stock'] !== $originalStock) {
                         throw ValidationException::withMessages([
@@ -514,8 +538,17 @@ class Admin extends Controller
     {
         $this->authorizeAdmin('content');
         $data = $request->validate(['preset' => 'required|integer', 'image' => ImageStudio::IMAGE_RULE]);
+        $path = $this->studio->generate($data['image'], (int) $data['preset']);
+        if ($request->expectsJson()) {
+            $file = basename($path);
 
-        return back()->with('generated', $this->studio->generate($data['image'], (int) $data['preset']));
+            return response()->json([
+                'path' => route('admin.images.show', $file, false),
+                'publish' => route('admin.images.publish', $file, false),
+            ]);
+        }
+
+        return back()->with('generated', $path);
     }
 
     public function studioImage(string $file)
@@ -524,7 +557,7 @@ class Admin extends Controller
         return Storage::disk('local')->response($this->studioPath($file));
     }
 
-    public function publishImage(string $file)
+    public function publishImage(Request $request, string $file)
     {
         $this->authorizeAdmin('content');
         $stream = Storage::disk('local')->readStream($this->studioPath($file));
@@ -538,7 +571,11 @@ class Admin extends Controller
             }
         }
 
-        return back()->with('generated', 'studio/'.$file)->with('upload', '/storage/'.$path)->with('notice', 'تصویر در گالری ذخیره شد.');
+        $url = '/storage/'.$path;
+
+        return $request->expectsJson()
+            ? response()->json(['path' => $url])
+            : back()->with('generated', 'studio/'.$file)->with('upload', $url)->with('notice', 'تصویر در گالری ذخیره شد.');
     }
 
     private function studioPath(string $file): string
@@ -552,17 +589,66 @@ class Admin extends Controller
     public function upload(Request $request)
     {
         $this->authorizeAdmin('content');
-        $data = $request->validate(['image' => ImageStudio::IMAGE_RULE, 'preset' => 'sometimes|required|integer']);
+        $video = $request->input('kind') === 'video';
+        $field = $video ? 'file' : 'image';
+        $data = $request->validate([
+            'kind' => 'sometimes|required|in:image,video',
+            $field => $video ? Media::VIDEO_RULE : ImageStudio::IMAGE_RULE,
+            'preset' => $video ? 'prohibited' : 'sometimes|required|integer',
+        ], [
+            'file.mimetypes' => 'ویدئو باید MP4 یا WebM باشد.',
+            'file.max' => 'حجم ویدئو باید حداکثر ۳۲ مگابایت باشد.',
+            'image.max' => 'حجم عکس باید حداکثر ۸ مگابایت باشد.',
+        ]);
         $generated = isset($data['preset']);
-        $path = $generated
-            ? $this->studio->generate($data['image'], (int) $data['preset'], forCatalog: true)
-            : $data['image']->store('catalog', 'public');
+        $file = $data[$field];
+        if ($generated) {
+            $path = $this->studio->generate($file, (int) $data['preset'], forCatalog: true);
+        } else {
+            $label = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+            $label = rtrim(substr($label, 0, 60), '-') ?: ($video ? 'video' : 'photo');
+            $path = $file->storeAs('catalog', $label.'-'.strtolower((string) Str::ulid()).'.'.$file->extension(), 'public');
+        }
         abort_unless($path, 500);
         $url = '/storage/'.$path;
 
         return $request->expectsJson()
             ? response()->json(['path' => $url])
-            : back()->with('upload', $url)->with('notice', $generated ? 'تصویر استودیو در گالری ذخیره شد.' : 'تصویر بارگذاری شد.');
+            : back()->with('upload', $url)->with('notice', $generated ? 'تصویر استودیو در کتابخانه ذخیره شد.' : 'فایل بارگذاری شد.');
+    }
+
+    public function media(Request $request)
+    {
+        $this->authorizeAdmin('content');
+        $filters = $request->validate(['q' => 'nullable|string|max:120', 'type' => 'nullable|in:image,video', 'page' => 'nullable|integer|min:1|max:10000']);
+        $disk = Storage::disk('public');
+        $files = [];
+        foreach ($disk->files('catalog') as $file) {
+            if (Media::type('/storage/'.$file)) {
+                $files[$file] = $disk->lastModified($file);
+            }
+        }
+        arsort($files);
+        $paths = array_merge(
+            array_map(fn ($file) => '/storage/'.$file, array_keys($files)),
+            array_map(fn ($file) => '/assets/'.basename($file), glob(public_path('assets/*'))),
+        );
+        $items = [];
+        foreach ($paths as $path) {
+            $type = Media::type($path);
+            $label = preg_replace('/-[0-9a-hjkmnp-tv-z]{26}$/', '', pathinfo($path, PATHINFO_FILENAME));
+            if ($type && (!isset($filters['type']) || $filters['type'] === $type)
+                && mb_stripos(basename($path), $filters['q'] ?? '') !== false) {
+                $items[] = compact('path', 'type', 'label');
+            }
+        }
+        $page = (int) ($filters['page'] ?? 1);
+        $size = 20;
+
+        return response()->json([
+            'items' => array_slice($items, ($page - 1) * $size, $size),
+            'next' => count($items) > $page * $size ? $page + 1 : null,
+        ]);
     }
 
     public function status(Request $request, int $id, OrderPayments $payments)

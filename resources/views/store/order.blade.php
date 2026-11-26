@@ -2,15 +2,16 @@
     $payment = $order->payments->sortByDesc('id')->first();
     $parts = $order->financials();
 @endphp
-<section class="wrap inner-section">
+<section class="wrap inner-section order-page">
     <nav class="breadcrumb" aria-label="مسیر صفحه">
         <a href="{{ route('account.index') }}">حساب کاربری</a>
         <span aria-current="page">جزئیات سفارش</span>
     </nav>
     <div class="section-heading">
         <h1>{{ $heading }}</h1>
-        <strong>{{ \App\Models\Order::STATUSES[$order->status] }}</strong>
+        <strong class="order-status">{{ \App\Models\Order::STATUSES[$order->status] }}</strong>
     </div>
+    @include('store.purchase-steps', ['purchaseStep' => 3])
     <div class="cart-layout">
         <div class="checkout-form order-receipt">
             <h2>اقلام سفارش</h2>
@@ -60,6 +61,10 @@
             @elseif($order->status === 'review')
                 <p>پرداخت در بانک ثبت شده و فروشگاه نتیجهٔ تطبیق سفارش را پیگیری می‌کند.</p>
             @endif
+            @if($order->customer['delivery'] === 'pickup')
+                <p class="cart-pickup-note">{{ $contact['address'] }}</p>
+            @endif
+            <a class="text-link" href="tel:{{ $contact['dial'] }}">تماس برای پیگیری سفارش</a>
         </aside>
     </div>
 </section>

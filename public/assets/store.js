@@ -1,11 +1,21 @@
 'use strict';
 
 const image = document.querySelector('#product-image');
+const galleryVideo = document.querySelector('#product-video');
 const thumbnails = document.querySelectorAll('[data-gallery]');
 for (const thumbnail of thumbnails) {
     thumbnail.addEventListener('click', () => {
-        image.src = thumbnail.dataset.gallery;
-        image.alt = thumbnail.dataset.alt;
+        const showVideo = thumbnail.dataset.type === 'video';
+        if (showVideo) {
+            if (galleryVideo.getAttribute('src') !== thumbnail.dataset.gallery) galleryVideo.src = thumbnail.dataset.gallery;
+            galleryVideo.setAttribute('aria-label', thumbnail.dataset.alt);
+        } else {
+            galleryVideo.pause();
+            image.src = thumbnail.dataset.gallery;
+            image.alt = thumbnail.dataset.alt;
+        }
+        galleryVideo.hidden = !showVideo;
+        image.hidden = showVideo;
         for (const button of thumbnails) {
             button.setAttribute('aria-pressed', String(button === thumbnail));
         }
@@ -13,7 +23,7 @@ for (const thumbnail of thumbnails) {
 }
 
 for (const alternate of document.querySelectorAll('[data-product-alternate]')) {
-    const link = alternate.parentElement;
+    const link = alternate.closest('.product-card-link');
     const loadPhoto = () => {
         if (!alternate.isConnected) return;
         const photo = alternate.content.firstElementChild;
@@ -24,6 +34,14 @@ for (const alternate of document.querySelectorAll('[data-product-alternate]')) {
         if (event.pointerType !== 'touch') loadPhoto();
     });
     link.addEventListener('focus', loadPhoto, { once: true });
+}
+
+const catalogRail = document.querySelector('[data-catalog-rail]');
+const activeFamily = catalogRail?.querySelector('[aria-current="page"]');
+if (activeFamily) {
+    const rail = catalogRail.getBoundingClientRect();
+    const family = activeFamily.getBoundingClientRect();
+    if (family.left < rail.left) catalogRail.scrollLeft += family.right - rail.right;
 }
 
 const seo = document.querySelector('[data-seo-form]');
@@ -203,6 +221,7 @@ if (checkoutForm) {
     const updateAddress = () => {
         const shipping = checkoutForm.elements.delivery.value === 'shipping';
         checkoutForm.querySelector('[data-shipping-address]').hidden = !shipping;
+        checkoutForm.querySelector('[data-pickup-note]').hidden = shipping;
         checkoutForm.elements.address.required = shipping;
     };
     checkoutForm.elements.delivery.addEventListener('change', updateAddress);

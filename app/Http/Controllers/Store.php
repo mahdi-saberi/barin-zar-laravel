@@ -21,6 +21,8 @@ class Store extends Controller
 {
     private const CATALOG_PER_PAGE = 12;
 
+    private const PRODUCT_RECOMMENDATIONS = 4;
+
     private const WEIGHT_RANGES = [
         'under-3' => ['label' => 'کمتر از ۳ گرم', 'min' => 1, 'max' => 2999],
         '3-to-6' => ['label' => '۳ تا کمتر از ۶ گرم', 'min' => 3000, 'max' => 5999],
@@ -97,7 +99,7 @@ class Store extends Controller
                 break;
             case 'product':
                 $product = (clone $published)->where('slug', $slug)->firstOrFail();
-                $products = (clone $published)->where('slug', '!=', $slug)->limit(3)->get();
+                $products = $this->recommendations($published, $product);
                 break;
             case 'cart':
                 $products = $cartProducts->get()->keyBy('slug');
@@ -183,6 +185,39 @@ class Store extends Controller
         abort_if($pagination->currentPage() > $pagination->lastPage(), 404);
 
         return $pagination->appends($filters);
+    }
+
+    private function recommendations(Builder $published, Entry $product): Collection
+    {
+        $grammar = $published->getQuery()->getGrammar();
+        $category = $grammar->wrap('data->category');
+        $stock = $grammar->wrap('data->stock');
+        $candidates = (clone $published)->whereKeyNot($product->id)->reorder()
+            ->orderByRaw("case when cast($stock as decimal(12, 0)) > 0 then 0 else 1 end")
+            ->orderByRaw("case when $category = ? then 0 else 1 end", [$product->data['category'] ?? null])
+            ->orderBy('id')
+            ->cursor();
+        $items = collect();
+        $reserve = collect();
+        $shown = [];
+        foreach ($candidates as $candidate) {
+            $cover = $candidate->data['images'][0] ?? '';
+            if (isset($shown[$cover])) {
+                if ($reserve->count() < self::PRODUCT_RECOMMENDATIONS) {
+                    $reserve->push($candidate);
+                }
+                continue;
+            }
+            $shown[$cover] = true;
+            $items->push($candidate);
+            if ($items->count() === self::PRODUCT_RECOMMENDATIONS) {
+                break;
+            }
+        }
+        $items = $items->concat($reserve)->take(self::PRODUCT_RECOMMENDATIONS);
+
+        // A complete two-column row also applies when the published catalog is small.
+        return $items->take($items->count() - $items->count() % 2);
     }
 
     public function changeCart(Request $request, string $slug)

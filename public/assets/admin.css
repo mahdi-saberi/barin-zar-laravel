@@ -160,23 +160,7 @@ ul.admin-message { padding-inline-start: 32px; }
 .admin-field-wide { grid-column: 1 / -1; }
 .admin-checkbox { display: flex; align-items: center; align-self: start; gap: 8px; }
 .admin-checkbox input[type="checkbox"] { inline-size: 18px; block-size: 18px; accent-color: var(--admin-pine); }
-.admin-rich-field { display: grid; gap: 6px; min-width: 0; }
-.admin-rich-editor { border: 1px solid var(--admin-border); border-radius: 8px; background: #fff; }
-.admin-rich-toolbar { display: flex; flex-wrap: wrap; gap: 5px; padding: 7px; border-block-end: 1px solid var(--admin-border); background: var(--admin-bg); border-radius: 8px 8px 0 0; }
-.admin-rich-toolbar button { min-height: 38px; padding: 4px 10px; border: 1px solid var(--admin-border); border-radius: 5px; background: #fff; font-size: 13px; }
-.admin-rich-toolbar button:hover { border-color: var(--admin-pine); color: var(--admin-pine); }
-.admin-rich-body { min-height: 145px; padding: 10px 12px; }
-.admin-rich-body:focus-visible { outline-offset: -3px; }
-.admin-rich-feedback { display: block; padding: 4px 12px; }
 .admin-form-actions { margin-block: 4px 16px; }
-.admin-image-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-block-end: 12px; }
-.admin-image-strip img { width: 82px; height: 82px; border-radius: 8px; border: 1px solid var(--admin-border); }
-.admin-inline-upload { display: grid; gap: 6px; margin-block-end: 12px; padding-block-end: 12px; border-block-end: 1px solid var(--admin-border); }
-.admin-upload-progress, .admin-upload-preview { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.admin-upload-progress p { color: var(--admin-muted); font-size: 13px; }
-.admin-upload-preview img { width: 136px; height: 136px; object-fit: cover; border: 1px solid var(--admin-border); border-radius: 8px; }
-.admin-copy-path { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-block-start: 12px; }
-.admin-copy-path label { flex: 1 1 240px; min-width: 0; }
 .admin-delete summary { color: #8d3228; }
 .admin-delete p { margin-block: 8px; }
 .admin-seo-preview h2 { margin-block-end: 6px; }
@@ -184,7 +168,7 @@ ul.admin-message { padding-inline-start: 32px; }
 .admin-directory-filters { grid-template-columns: minmax(0, 340px) auto; justify-content: start; align-items: end; }
 .admin-studio-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .admin-panel-form { display: grid; align-content: start; justify-items: start; gap: 10px; }
-.admin-panel-form label, .admin-copy-path { width: 100%; }
+.admin-panel-form label { width: 100%; }
 .admin-generated { display: flex; align-items: start; gap: 14px; flex-wrap: wrap; }
 .admin-generated img { width: min(100%, 300px); height: auto; border-radius: 10px; }
 .admin-generated .admin-actions { margin-block-start: 10px; }

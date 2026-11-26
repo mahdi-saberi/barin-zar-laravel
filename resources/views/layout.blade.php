@@ -66,6 +66,11 @@
             <a href="{{ route('page.show', 'guide') }}">راهنمای خرید</a>
             <a href="{{ route('admin.index') }}">مدیریت</a>
         </nav>
+        <address class="footer-contact" id="store-contact">
+            <strong>نشانی گالری برین‌زر</strong>
+            <p>{{ $contact['address'] }}</p>
+            <a href="tel:{{ $contact['dial'] }}">تلفن <bdi>{{ $contact['phone'] }}</bdi></a>
+        </address>
     </div>
 </footer>
 </body>

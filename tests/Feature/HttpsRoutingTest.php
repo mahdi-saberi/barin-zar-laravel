@@ -69,7 +69,7 @@ class HttpsRoutingTest extends TestCase
         config(['app.url' => self::PUBLIC]);
         foreach (['', '?sort=asc'] as $query) {
             $response = $this->get(self::INTERNAL.'/shop/category/ring'.$query)->assertOk()
-                ->assertSee('action="/shop/category/ring"', false)
+                ->assertSee('action="/shop/category/ring#catalog-results"', false)
                 ->assertDontSee(self::INTERNAL, false);
             $this->assertStringStartsWith(self::PUBLIC.'/shop/category/ring?', $response->viewData('pagination')->nextPageUrl());
         }

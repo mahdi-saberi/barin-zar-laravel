@@ -91,6 +91,71 @@ class AdminStoreTest extends TestCase
         $this->assertSame($data['name'], $entry->fresh()->data['name']);
     }
 
+    public function test_product_form_creates_unique_identifiers_and_preserves_them_when_editing(): void
+    {
+        $this->signIn();
+        $this->get('/admin?tab=product&create=1')->assertOk()
+            ->assertDontSee('name="slug"', false)->assertDontSee('name="images"', false)
+            ->assertSee('data-media-field', false)->assertSee('quill-2.0.3/quill.js', false);
+
+        $data = ['name' => 'انگشتر طلای جدید', 'category' => 'ring', 'milligrams' => 3000,
+            'stock' => 1, 'labor' => 0, 'cost' => 0, 'profit_bps' => 0, 'discount_bps' => 0, 'tax_bps' => 0,
+            'media' => json_encode([['path' => '/assets/ring.webp', 'alt' => 'نمای روبه‌رو']])];
+        $slugs = [];
+        for ($i = 0; $i < 2; $i++) {
+            $response = $this->post('/admin/save/product', $data)->assertRedirectContains('tab=product&edit=');
+            parse_str(parse_url($response->headers->get('Location'), PHP_URL_QUERY), $query);
+            $slugs[] = $query['edit'];
+            $this->assertMatchesRegularExpression('/^[a-z0-9-]+-[0-9a-hjkmnp-tv-z]{26}$/', $query['edit']);
+        }
+
+        $this->assertNotSame(...$slugs);
+        $edit = ['edit' => $slugs[0], 'original_stock' => 1, 'name' => 'نام تازه محصول'];
+        $this->post('/admin/save/product', $edit + $data)->assertRedirect('/admin?tab=product&edit='.$slugs[0]);
+        $this->assertSame($edit['name'], Entry::getData('product', $slugs[0])['name']);
+        $this->assertSame($data['name'], Entry::getData('product', $slugs[1])['name']);
+        $this->get('/product/'.$slugs[0])->assertOk();
+    }
+
+    public function test_video_upload_and_mixed_gallery_keep_a_photo_for_the_storefront_cover(): void
+    {
+        $this->actingAs(User::factory()->create())->getJson('/admin/media')->assertForbidden();
+        $this->signIn();
+        Storage::fake('public');
+        $text = UploadedFile::fake()->createWithContent('text.mp4', 'plain text');
+        $this->postJson('/admin/upload', [
+            'kind' => 'video', 'file' => new UploadedFile($text->getPathname(), 'text.mp4', 'video/mp4', null, true),
+        ])->assertUnprocessable()->assertJsonValidationErrors('file');
+
+        $clip = UploadedFile::fake()->create('ring-detail.mp4', 1, 'video/mp4');
+        $video = $this->postJson('/admin/upload', ['kind' => 'video', 'file' => $clip])->assertOk()->json('path');
+        Storage::disk('public')->assertExists(Str::after($video, '/storage/'));
+        $this->getJson('/admin/media?type=video&q=ring')->assertExactJson([
+            'items' => [['path' => $video, 'type' => 'video', 'label' => 'ring-detail']], 'next' => null,
+        ]);
+        $this->getJson('/admin/media?type=image&q=ring')->assertJsonMissing(['path' => $video]);
+
+        $gallery = [
+            ['path' => $video, 'alt' => ''],
+            ['path' => '/assets/ring-detail.webp', 'alt' => 'نمای نزدیک'],
+            ['path' => '/assets/ring.webp', 'alt' => 'نمای اصلی'],
+        ];
+        $data = ['slug' => 'mixed-gallery', 'name' => 'گالری مختلط', 'category' => 'ring', 'milligrams' => 3500,
+            'stock' => 1, 'labor' => 0, 'cost' => 0, 'profit_bps' => 0, 'discount_bps' => 0, 'tax_bps' => 0,
+            'media' => json_encode($gallery), 'description_html' => '1',
+            'description' => '<p class="ql-align-center ql-direction-ltr arbitrary">Details</p>'
+                .'<img src="/assets/ring.webp" alt="نمای نگین"><img src="https://example.test/remote.png">'];
+        $this->post('/admin/save/product', ['media' => json_encode([$gallery[0]])] + $data)->assertSessionHasErrors('media');
+        $this->post('/admin/save/product', $data)->assertRedirect('/admin?tab=product&edit=mixed-gallery');
+        $stored = Entry::getData('product', $data['slug']);
+        $this->assertSame($gallery, $stored['media']);
+        $this->assertSame(['/assets/ring-detail.webp', '/assets/ring.webp'], $stored['images']);
+        $this->get('/product/mixed-gallery')->assertOk()->assertSee('id="product-image" src="/assets/ring-detail.webp"', false)
+            ->assertSee('data-gallery="'.$video.'" data-type="video"', false)
+            ->assertSee('class="ql-align-center ql-direction-ltr">Details', false)
+            ->assertSee('alt="نمای نگین"', false)->assertDontSee('example.test/remote.png')->assertDontSee('arbitrary');
+    }
+
     public function test_checkout_order_filters_csv_and_stock_restoration(): void
     {
         $this->signIn();
@@ -240,6 +305,12 @@ class AdminStoreTest extends TestCase
             ->assertRedirect('/admin?tab=studio')->assertSessionHas('generated');
         $this->assertSame($output, Storage::disk('local')->get(session('generated')));
         $this->assertCount(1, Storage::disk('public')->files('catalog'));
+
+        $result = $this->postJson('/admin/image', ['preset' => 7, 'image' => $reference])->assertOk()->json();
+        $this->get($result['path'])->assertOk();
+        $this->assertCount(1, Storage::disk('public')->files('catalog'));
+        $published = $this->postJson($result['publish'])->assertOk()->json('path');
+        $this->assertSame($output, Storage::disk('public')->get(Str::after($published, '/storage/')));
     }
 
     public function test_invalid_studio_requests_and_provider_failures_do_not_add_a_gallery_image(): void
