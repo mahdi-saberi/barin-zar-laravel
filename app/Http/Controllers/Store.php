@@ -4,52 +4,140 @@ namespace App\Http\Controllers;
 
 use App\Models\Entry;
 use App\Services\Pricing;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Store extends Controller
 {
+    private const CATALOG_PER_PAGE = 12;
+
+    public function __construct(private readonly Pricing $pricing) {}
+
+    public function catalog(Request $request, ?string $category = null)
+    {
+        $categories = config('barin.categories');
+        $legacyCategory = $request->query('category');
+        if ($category === null && is_string($legacyCategory) && $legacyCategory !== '') {
+            abort_unless(isset($categories[$legacyCategory]), 404);
+
+            return redirect()->route('shop.category', ['category' => $legacyCategory] + $request->only(['q', 'max', 'sort', 'page']), 301);
+        }
+        abort_if($category !== null && ! isset($categories[$category]), 404);
+
+        return $this->show($request, 'catalog', $category);
+    }
+
     public function show(Request $request, string $mode = 'home', ?string $slug = null)
     {
+        $categories = config('barin.categories');
+        $category = $mode === 'catalog' ? $slug : null;
         $rate = Entry::getData('rate', 'latest');
-        $products = Entry::where('kind', 'product')->orderBy('id')->get()->keyBy('slug');
-        $campaigns = Entry::where('kind', 'campaign')->orderBy('id')->get()->filter(function ($campaign) {
-            $c = $campaign->data;
-            return now()->toDateString() >= $c['start'] && now()->toDateString() <= $c['end'];
-        });
-        $quotes = $products->map(fn ($p) => $this->price($p, $rate, $campaigns));
-        $product = $mode === 'product' ? $products->get($slug) : null;
-        abort_if($mode === 'product' && !$product, 404);
-        $page = Entry::getData('page', $mode === 'page' ? $slug : $mode);
-        abort_if($mode === 'page' && !$page, 404);
-        $seo = Entry::getData('seo', $mode === 'product' ? 'product-'.$slug : ($mode === 'page' ? $slug : $mode));
-        $cart = collect($request->session()->get('cart', []))->intersect($products->keys());
-        if ($mode === 'catalog') {
-            $products = $products->filter(fn ($p) =>
-                (!$request->filled('category') || $p->data['category'] === $request->query('category'))
-                && (!$request->filled('q') || str_contains($p->data['name'], $request->string('q')->toString()))
-                && (!$request->filled('max') || $quotes[$p->slug]['total'] <= $request->integer('max')));
-            if (in_array($request->query('sort'), ['asc', 'desc'], true)) {
-                $products = $products->sortBy(fn ($p) => $quotes[$p->slug]['total'], descending: $request->query('sort') === 'desc');
-            }
+        $campaigns = $this->pricing->activeCampaigns();
+        $published = Entry::products()->published()->orderBy('id');
+        $cart = collect($request->session()->get('cart', []));
+        $cartProducts = (clone $published)->whereIn('slug', $cart->all());
+        $products = collect();
+        $collections = collect();
+        $product = $pagination = null;
+        $filters = [];
+
+        switch ($mode) {
+            case 'home':
+                foreach ($categories as $key => $label) {
+                    $collections->put($key, (clone $published)->where('data->category', $key)->limit(3)->get());
+                }
+                break;
+            case 'catalog':
+                $search = $request->query('q');
+                $sort = $request->query('sort');
+                $filters = array_filter([
+                    'q' => is_string($search) ? trim($search) : '',
+                    'max' => max(0, $request->integer('max')),
+                    'sort' => in_array($sort, ['asc', 'desc'], true) ? $sort : '',
+                ], fn ($value) => $value !== '' && $value !== 0);
+                $pagination = $this->catalogProducts($published, $category, $filters, $rate, $campaigns);
+                $products = $pagination->getCollection();
+                break;
+            case 'product':
+                $product = (clone $published)->where('slug', $slug)->firstOrFail();
+                $products = (clone $published)->where('slug', '!=', $slug)->limit(3)->get();
+                break;
+            case 'cart':
+                $products = $cartProducts->get()->keyBy('slug');
+                $available = $cart->intersect($products->keys())->values();
+                if ($available->count() !== $cart->count()) {
+                    $request->session()->put('cart', $available->all());
+                }
+                $cart = $available;
+                break;
         }
-        return view('store', compact('mode', 'slug', 'rate', 'products', 'quotes', 'product', 'page', 'seo', 'cart', 'campaigns') + [
-            'categories' => config('barin.categories'),
-            'checkoutKey' => hash('sha256', json_encode([$cart->values(), $quotes->only($cart->all())->sortKeys()])),
+        if ($mode !== 'cart' && $cart->isNotEmpty()) {
+            $cart = $cart->intersect($cartProducts->pluck('slug'))->values();
+        }
+
+        $displayed = $mode === 'home' ? $collections->collapse() : $products;
+        if ($product) {
+            $displayed = $displayed->concat([$product]);
+        }
+        $quotes = $displayed->keyBy('slug')->map(fn (Entry $item) => $this->pricing->forProduct($item, $rate, $campaigns));
+        $page = Entry::getData('page', $mode === 'page' ? $slug : $mode);
+        abort_if($mode === 'page' && ! $page, 404);
+        $seoKey = match (true) {
+            $mode === 'product' => 'product-'.$slug,
+            $mode === 'page' => $slug,
+            $category !== null => 'category-'.$category,
+            default => $mode,
+        };
+        $seo = Entry::getData('seo', $seoKey);
+
+        return view('store', compact(
+            'mode', 'slug', 'rate', 'products', 'quotes', 'product', 'page', 'seo', 'cart', 'campaigns',
+            'categories', 'category', 'collections', 'pagination', 'filters'
+        ) + [
+            'checkoutKey' => $mode === 'cart' ? hash('sha256', json_encode([$cart->all(), $quotes->sortKeys()])) : null,
         ]);
     }
 
-    public function price($product, array $rate, $campaigns): array
+    private function catalogProducts(Builder $query, ?string $category, array $filters, array $rate, Collection $campaigns): LengthAwarePaginator
     {
-        $promo = $campaigns->filter(fn ($c) => empty($c->data['product']) || $c->data['product'] === $product->slug)
-            ->max(fn ($c) => $c->data['discount_bps']) ?? 0;
-        return app(Pricing::class)->breakdown($product->data, $rate['value'] ?? 0, $promo);
+        if ($category !== null) {
+            $query->where('data->category', $category);
+        }
+        if (isset($filters['q'])) {
+            $query->matching($filters['q'], ['data->name']);
+        }
+        if (isset($filters['max']) || isset($filters['sort'])) {
+            // The final price depends on the current rate and active discounts.
+            $items = $query->get();
+            $totals = $items->mapWithKeys(fn (Entry $item) => [
+                $item->id => $this->pricing->forProduct($item, $rate, $campaigns)['total'],
+            ]);
+            if (isset($filters['max'])) {
+                $items = $items->filter(fn (Entry $item) => $totals[$item->id] <= $filters['max']);
+            }
+            if (isset($filters['sort'])) {
+                $items = $items->sortBy(fn (Entry $item) => $totals[$item->id], descending: $filters['sort'] === 'desc');
+            }
+            $page = LengthAwarePaginator::resolveCurrentPage();
+            $pagination = new LengthAwarePaginator(
+                $items->forPage($page, self::CATALOG_PER_PAGE)->values(), $items->count(), self::CATALOG_PER_PAGE, $page,
+                ['path' => LengthAwarePaginator::resolveCurrentPath()]
+            );
+        } else {
+            $pagination = $query->paginate(self::CATALOG_PER_PAGE);
+        }
+        abort_if($pagination->currentPage() > $pagination->lastPage(), 404);
+
+        return $pagination->appends($filters);
     }
 
     public function changeCart(Request $request, string $slug)
     {
-        abort_unless(Entry::getData('product', $slug), 404);
+        abort_unless($request->boolean('remove') || Entry::products()->published()->where('slug', $slug)->exists(), 404);
         $cart = collect($request->session()->get('cart', []))->reject(fn ($id) => $id === $slug);
         if (!$request->boolean('remove')) {
             $cart->push($slug);
@@ -77,10 +165,9 @@ class Store extends Controller
             if ($rate['source'] === 'sample' && app()->isProduction()) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['cart' => 'برای ثبت سفارش، نرخ واقعی باید فعال شود.']);
             }
-            $campaigns = Entry::where('kind', 'campaign')->get()->filter(fn ($c) =>
-                now()->toDateString() >= $c->data['start'] && now()->toDateString() <= $c->data['end']);
-            $products = Entry::where('kind', 'product')->whereIn('slug', $slugs)->orderBy('id')->lockForUpdate()->get();
-            $quotes = $products->keyBy('slug')->map(fn ($p) => $this->price($p, $rate, $campaigns));
+            $campaigns = $this->pricing->activeCampaigns();
+            $products = Entry::products()->published()->whereIn('slug', $slugs)->orderBy('id')->lockForUpdate()->get();
+            $quotes = $products->keyBy('slug')->map(fn (Entry $item) => $this->pricing->forProduct($item, $rate, $campaigns));
             if (count($slugs) !== $products->count() || !hash_equals(hash('sha256', json_encode([$slugs, $quotes->sortKeys()])), (string) $request->input('checkout_key'))) {
                 throw \Illuminate\Validation\ValidationException::withMessages(['cart' => 'سبد یا قیمت تغییر کرد. قیمت جدید را بررسی کنید.']);
             }

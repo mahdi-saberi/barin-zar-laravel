@@ -1,7 +1,16 @@
 @php
     $data = $product?->data ?? $page;
-    $title = $seo['title'] ?? (($data['name'] ?? match($mode){'cart'=>'سبد خرید','catalog'=>'ویترین طلا',default=>'گالری طلا'}).' | برین‌زر');
-    $description = $seo['description'] ?? $data['description'] ?? 'خرید طلای ۱۸ عیار از برین‌زر در بازار تهران.';
+    $catalogTitle = $category ? $categories[$category].' طلا' : ($page['name'] ?? 'ویترین طلا');
+    $heading = match ($mode) {
+        'catalog' => $catalogTitle,
+        'cart' => 'سبد خرید',
+        default => $data['name'] ?? 'گالری طلا',
+    };
+    $pageNumber = $pagination?->currentPage() ?? 1;
+    $title = ($seo['title'] ?? $heading.' | برین‌زر').($pageNumber > 1 ? ' · صفحه '.number_format($pageNumber) : '');
+    $catalogDescription = $category ? 'مدل‌های '.$categories[$category].' طلای ۱۸ عیار در برین‌زر.' : ($page['description'] ?? '');
+    $description = $seo['description'] ?? ($category ? $catalogDescription : ($data['description'] ?? 'خرید طلای ۱۸ عیار از برین‌زر در بازار تهران.'));
+    $canonical = $seo['canonical'] ?? (url()->current().($pageNumber > 1 ? '?page='.$pageNumber : ''));
     $settings = \App\Models\Entry::getData('settings', 'store');
     $active = $campaigns->filter(fn($c) => in_array($c->data['placement'], [$mode, 'both'], true) && ($mode !== 'product' || empty($c->data['product']) || $c->data['product'] === $slug));
     $quote = $product ? $quotes[$slug] : null;
@@ -11,7 +20,7 @@
         $schema['offers'] = ['@type'=>'Offer','priceCurrency'=>'IRR','price'=>$quote['total'] * 10,'url'=>url()->current(),'availability'=>'https://schema.org/'.($data['stock'] ? 'InStock' : 'OutOfStock')];
     }
 @endphp
-@extends('layout', ['title'=>$title,'description'=>$description,'canonical'=>$seo['canonical'] ?? null,'noindex'=>$mode==='cart' || !empty($seo['noindex']),'theme'=>$active->first()?->data['theme'] ?? null,'brand'=>$settings['brand'] ?? null,'footer'=>$settings['footer'] ?? null])
+@extends('layout', ['title'=>$title,'description'=>$description,'canonical'=>$canonical,'noindex'=>$mode==='cart' || !empty($seo['noindex']),'theme'=>$active->first()?->data['theme'] ?? null,'brand'=>$settings['brand'] ?? null,'footer'=>$settings['footer'] ?? null])
 @section('content')
 @if($mode === 'home')
 <section class="hero campaign">
@@ -22,15 +31,26 @@
     @switch($section)
     @case('categories')
     <nav class="rail category-photos" aria-label="دسته‌های طلا">
-    @foreach($categories as $key=>$category)
-       <?php $image = $products->first(fn($p) => $p->data['category'] === $key)?->data['images'][0] ?? null; ?>
-       <a href="/shop?category={{ $key }}">@if($image)<img src="{{ $image }}" alt="" width="90" height="90" loading="lazy">@endif<span>{{ $category }}</span></a>
+    @foreach($categories as $key => $label)
+       @php($image = $collections->get($key)?->first()?->data['images'][0] ?? null)
+       <a href="{{ route('shop.category', $key) }}">@if($image)<img src="{{ $image }}" alt="" width="90" height="90" loading="lazy">@endif<span>{{ $label }}</span></a>
     @endforeach
     </nav>
     @break
     @case('products')
-    <section class="section"><div class="split"><h2>{{ $page['products_heading'] ?? 'منتخب گالری' }}</h2><a href="/shop" class="link">همه قطعات</a></div>
-    @include('products')
+    <section class="section home-collections" aria-labelledby="collection-heading">
+        <div class="split"><h2 id="collection-heading">{{ $page['products_heading'] ?? 'مجموعه‌های طلا' }}</h2><a href="{{ route('shop.index') }}" class="link">همه قطعات</a></div>
+        @forelse($collections->filter(fn ($items) => $items->isNotEmpty()) as $key => $items)
+            <section class="collection-preview" aria-labelledby="collection-{{ $key }}">
+                <div class="collection-heading">
+                    <h3 id="collection-{{ $key }}">{{ $categories[$key] }} طلا</h3>
+                    <a class="link" href="{{ route('shop.category', $key) }}">مشاهده همه {{ $categories[$key] }}</a>
+                </div>
+                @include('products', ['products' => $items, 'preview' => true, 'headingId' => 'collection-'.$key])
+            </section>
+        @empty
+            <p class="panel">هنوز محصولی در ویترین منتشر نشده است.</p>
+        @endforelse
     </section>
     @break
     @case('campaigns')
@@ -47,14 +67,37 @@
     @endswitch
 @endforeach
 @elseif($mode === 'catalog')
-<section class="section"><h1 class="title">{{ $page['name'] ?? 'ویترین طلا' }}</h1><p>{{ $page['description'] ?? '' }}</p>
-<form class="store-form panel filter" method="get" action="/shop">
-<label>جستجو<input name="q" value="{{ request()->string('q') }}" placeholder="نام قطعه"></label>
-<label>دسته<select name="category"><option value="">همه دسته‌ها</option>@foreach($categories as $id=>$label)<option value="{{ $id }}" @selected(request('category') === $id)>{{ $label }}</option>@endforeach</select></label>
-<label>سقف بودجه (تومان)<input type="number" name="max" min="1" value="{{ request()->integer('max') ?: '' }}"></label>
-<label>مرتب‌سازی<select name="sort"><option value="">پیش‌فرض</option><option value="asc" @selected(request('sort')==='asc')>کمترین قیمت</option><option value="desc" @selected(request('sort')==='desc')>بیشترین قیمت</option></select></label>
-<button class="btn">اعمال فیلتر</button></form>
-@include('products')</section>
+<section class="section catalog">
+    <nav class="crumb" aria-label="مسیر صفحه">
+        <a href="{{ route('home') }}">خانه</a> <span aria-hidden="true">/</span>
+        @if($category)
+            <a href="{{ route('shop.index') }}">ویترین طلا</a> <span aria-hidden="true">/</span>
+            <span aria-current="page">{{ $categories[$category] }}</span>
+        @else
+            <span aria-current="page">ویترین طلا</span>
+        @endif
+    </nav>
+    <h1 class="title">{{ $catalogTitle }}</h1>
+    @if($catalogDescription)<p>{{ $catalogDescription }}</p>@endif
+    <nav class="category-switcher" aria-label="دسته‌های طلا">
+        <a href="{{ route('shop.index', $filters) }}" @if(!$category) aria-current="page" @endif>همه طلاها</a>
+        @foreach($categories as $key => $label)
+            <a href="{{ route('shop.category', ['category' => $key] + $filters) }}" @if($category === $key) aria-current="page" @endif>{{ $label }}</a>
+        @endforeach
+    </nav>
+    <form class="store-form panel filter catalog-filter" method="get" action="{{ url()->current() }}">
+        <label>جست‌وجو<input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="نام قطعه"></label>
+        <label>سقف بودجه (تومان)<input type="number" name="max" min="1" value="{{ $filters['max'] ?? '' }}"></label>
+        <label>مرتب‌سازی<select name="sort"><option value="">پیش‌فرض</option><option value="asc" @selected(($filters['sort'] ?? '') === 'asc')>کمترین قیمت</option><option value="desc" @selected(($filters['sort'] ?? '') === 'desc')>بیشترین قیمت</option></select></label>
+        <button class="btn">اعمال فیلتر</button>
+    </form>
+    <div class="catalog-results">
+        <p>{{ number_format($pagination->total()) }} محصول</p>
+        @if($filters)<a class="link" href="{{ url()->current() }}">پاک کردن فیلترها</a>@endif
+    </div>
+    @include('products')
+    {{ $pagination->onEachSide(1)->links('partials.pagination') }}
+</section>
 @elseif($mode === 'product')
 <section class="section twocol">
 <div class="gallery">
