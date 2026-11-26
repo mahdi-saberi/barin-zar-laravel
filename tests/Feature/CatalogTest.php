@@ -21,8 +21,26 @@ class CatalogTest extends TestCase
 
         foreach ($collections as $category => $products) {
             $this->assertCount(3, $products);
+            $this->assertSame(Entry::products()->published()->where('data->category', $category)
+                ->orderByDesc('id')->limit(3)->pluck('id')->all(), $products->pluck('id')->all());
             $this->assertSame([$category], $products->pluck('data.category')->unique()->values()->all());
             $response->assertSee(route('shop.category', $category));
+        }
+    }
+
+    public function test_catalog_defaults_to_newest_products_across_pages(): void
+    {
+        foreach (['/shop' => null, '/shop/category/ring' => 'ring'] as $url => $category) {
+            $query = Entry::products()->published();
+            if ($category !== null) {
+                $query->where('data->category', $category);
+            }
+
+            $expected = $query->orderByDesc('id')->limit(24)->pluck('id')->all();
+            $first = $this->get($url)->assertOk()->viewData('pagination');
+            $second = $this->get($first->nextPageUrl())->assertOk()->viewData('pagination');
+
+            $this->assertSame($expected, $first->pluck('id')->concat($second->pluck('id'))->all());
         }
     }
 

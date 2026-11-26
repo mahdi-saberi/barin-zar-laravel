@@ -69,7 +69,7 @@ class Store extends Controller
         $category = $mode === 'catalog' ? $slug : null;
         $rate = Entry::getData('rate', 'latest');
         $campaigns = $this->pricing->activeCampaigns();
-        $published = Entry::products()->published()->orderBy('id');
+        $published = Entry::products()->published()->orderByDesc('id');
         $cart = collect($request->session()->get('cart', []));
         $cartProducts = (clone $published)->whereIn('slug', $cart->all());
         $products = collect();
