@@ -14,7 +14,9 @@
         default => [],
     };
 @endphp
-@if($type === 'checkbox')
+@if($type === 'richtext')
+    @include('admin.rich-text')
+@elseif($type === 'checkbox')
     <label class="admin-checkbox admin-field-wide">
         <input type="hidden" name="{{ $name }}" value="0">
         <input type="checkbox" name="{{ $name }}" value="1" @checked($value)>

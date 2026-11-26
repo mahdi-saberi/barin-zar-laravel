@@ -9,8 +9,9 @@
     };
     $pageNumber = $pagination?->currentPage() ?? 1;
     $title = ($seo['title'] ?? $heading.' | برین‌زر').($pageNumber > 1 ? ' · صفحه '.number_format($pageNumber) : '');
-    $catalogDescription = $category ? 'مدل‌های '.$categories[$category].' طلای ۱۸ عیار در برین‌زر.' : ($page['description'] ?? '');
-    $description = $seo['description'] ?? ($category ? $catalogDescription : ($data['description'] ?? 'خرید طلای ۱۸ عیار از برین‌زر در بازار تهران.'));
+    $description = $seo['description'] ?? ($category
+        ? 'مدل‌های '.$categories[$category].' طلای ۱۸ عیار در برین‌زر.'
+        : \App\Support\RichText::text($data, 'description', 'خرید طلای ۱۸ عیار از برین‌زر در بازار تهران.'));
     $canonical = $seo['canonical'] ?? (url()->current().($pageNumber > 1 ? '?page='.$pageNumber : ''));
     $settings = \App\Models\Entry::getData('settings', 'store');
     $active = $campaigns->filter(fn ($campaign) =>
@@ -26,7 +27,7 @@
     $noindex = $mode === 'cart' || !empty($seo['noindex']);
     $theme = $active->first()?->data['theme'] ?? null;
     $brand = $settings['brand'] ?? null;
-    $footer = $settings['footer'] ?? null;
+    $footer = \App\Support\RichText::render($settings, 'footer', 'گالری طلای ۱۸ عیار در بازار تهران');
     $schema = $product ? [
         '@context' => 'https://schema.org', '@type' => 'Product', 'name' => $data['name'],
         'sku' => $slug, 'description' => $description,

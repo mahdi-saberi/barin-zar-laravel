@@ -11,7 +11,9 @@
     </nav>
     <div class="catalog-intro">
         <h1>{{ $heading }}</h1>
-        @if(!$category && $catalogDescription)<p>{{ $catalogDescription }}</p>@endif
+        @if(!$category && !empty($page['description']))
+            <div class="catalog-description rich-content">{{ \App\Support\RichText::render($page, 'description') }}</div>
+        @endif
     </div>
     <div class="catalog-toolbar">
         <p class="catalog-count"><bdi>{{ number_format($pagination->total()) }}</bdi> محصول</p>

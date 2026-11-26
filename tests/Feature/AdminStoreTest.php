@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Models\Entry;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -171,5 +173,90 @@ class AdminStoreTest extends TestCase
             ->assertRedirect('/admin?tab=seo&edit=category-ring');
         $this->get('/shop/category/ring')->assertOk()->assertSee('سئوی انگشتر')->assertSee('noindex,follow');
         $this->get('/sitemap.xml')->assertOk()->assertDontSee('/shop/category/ring');
+    }
+
+    public function test_rich_content_is_editable_and_rendered_with_plain_metadata(): void
+    {
+        $this->signIn();
+        $create = '/admin?tab=page&create=1';
+        $edit = '/admin?tab=page&edit=care';
+        $this->get($create)->assertOk()->assertSee('data-rich-body', false);
+        $this->from($create)->post('/admin/save/page', [
+            'slug' => 'care', 'name' => 'نگهداری طلا',
+            'description' => '<p class="draft"><b>مراقبت</b> روزانه</p><ul><li>پاک‌کردن با پارچه</li></ul>'
+                .'<a href="/shop" target="_blank">ویترین</a> <a href="//other.test">متن ساده</a><iframe>حذف‌شدنی</iframe>',
+            'description_html' => '1',
+        ])->assertRedirect($edit);
+        $this->get($edit)->assertOk()->assertSee('name="description_html" value="1"', false)
+            ->assertSee('<strong>مراقبت</strong>', false);
+        $this->get('/page/care')->assertOk()
+            ->assertSee('<strong>مراقبت</strong>', false)
+            ->assertSee('<ul><li>پاک‌کردن با پارچه</li></ul>', false)
+            ->assertSee('<a href="/shop">ویترین</a>', false)
+            ->assertSee('content="مراقبت روزانه پاک‌کردن با پارچه ویترین متن ساده"', false)
+            ->assertDontSee('class="draft"', false)->assertDontSee('//other.test')->assertDontSee('حذف‌شدنی');
+
+        $this->from($edit)->post('/admin/save/page', [
+            'slug' => 'care', 'edit' => 'care', 'name' => 'نگهداری طلا',
+            'description' => "سطر یک\nسطر دو با <نمونه>",
+        ])->assertRedirect($edit);
+        $this->get('/page/care')->assertOk()->assertSee("سطر یک<br>\nسطر دو با &lt;نمونه&gt;", false)
+            ->assertDontSee('<strong>مراقبت</strong>', false);
+    }
+
+    public function test_product_upload_uses_the_selected_studio_preset_and_its_output_can_be_saved(): void
+    {
+        $this->signIn();
+        Storage::fake('public');
+        Storage::fake('local');
+        $url = 'https://api.openai.com/v1/images/edits';
+        Entry::putData('settings', 'store', ['ai_url' => $url, 'ai_model' => 'gpt-image-1', 'ai_token' => Crypt::encryptString('studio-test-token')]);
+        $output = file_get_contents(public_path('assets/m2.webp'));
+        Http::preventStrayRequests()->fake([$url => Http::response(['data' => [['b64_json' => base64_encode($output)]]])]);
+        $reference = new UploadedFile(public_path('assets/p2.webp'), 'reference.webp', 'image/webp', null, true);
+
+        foreach (['create=1', 'edit=ring'] as $query) {
+            $this->get('/admin?tab=product&'.$query)->assertOk()->assertSee('data-upload-preset', false)->assertSee('data-rich-body', false);
+        }
+        $this->get('/admin?tab=settings')->assertOk()->assertSee('gpt-image-2.5-sunburst');
+        $upload = $this->postJson('/admin/upload', ['image' => $reference, 'preset' => 7])->assertOk()->json('path');
+        $this->assertStringStartsWith('/storage/catalog/', $upload);
+        $this->assertSame($output, Storage::disk('public')->get(Str::after($upload, '/storage/')));
+        Http::assertSent(fn (ClientRequest $request) => $request->url() === $url
+            && $request->hasHeader('Authorization', 'Bearer studio-test-token')
+            && $request->hasFile('image', null, 'product.webp')
+            && collect($request->data())->firstWhere('name', 'model')['contents'] === 'gpt-image-2.5-sunburst'
+            && str_contains(collect($request->data())->firstWhere('name', 'prompt')['contents'], 'Place the bracelet on an adult wrist'));
+
+        $this->post('/admin/save/product', [
+            'slug' => 'studio-piece', 'name' => 'عکس استودیو', 'category' => 'bracelet', 'milligrams' => 3000,
+            'stock' => 1, 'labor' => 0, 'cost' => 0, 'profit_bps' => 0, 'discount_bps' => 0, 'tax_bps' => 0,
+            'images' => $upload, 'description' => '<p><em>توضیح محصول</em></p>', 'description_html' => '1',
+        ])->assertRedirect('/admin?tab=product&edit=studio-piece');
+        $this->get('/product/studio-piece')->assertOk()->assertSee($upload)->assertSee('<em>توضیح محصول</em>', false);
+
+        $this->from('/admin?tab=studio')->post('/admin/image', ['preset' => 7, 'image' => $reference])
+            ->assertRedirect('/admin?tab=studio')->assertSessionHas('generated');
+        $this->assertSame($output, Storage::disk('local')->get(session('generated')));
+        $this->assertCount(1, Storage::disk('public')->files('catalog'));
+    }
+
+    public function test_invalid_studio_requests_and_provider_failures_do_not_add_a_gallery_image(): void
+    {
+        $reference = new UploadedFile(public_path('assets/p1.webp'), 'reference.webp', 'image/webp', null, true);
+        $this->postJson('/admin/upload', ['image' => $reference, 'preset' => 1])->assertUnauthorized();
+        $this->actingAs(User::factory()->create())->postJson('/admin/upload', ['image' => $reference, 'preset' => 1])->assertForbidden();
+        $this->signIn();
+        Storage::fake('public');
+        $url = 'https://api.openai.com/v1/images/edits';
+        Http::preventStrayRequests()->fake([$url => Http::sequence()->pushStatus(429)->push(['data' => [['b64_json' => base64_encode('text')]]])]);
+        $this->postJson('/admin/upload', ['image' => $reference, 'preset' => 1])->assertUnprocessable()->assertJsonValidationErrors('image');
+        Entry::putData('settings', 'store', ['ai_url' => $url]);
+        $this->postJson('/admin/upload', ['image' => $reference, 'preset' => 9999])->assertUnprocessable()->assertJsonValidationErrors('preset');
+        Http::assertNothingSent();
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $this->postJson('/admin/upload', ['image' => $reference, 'preset' => 1])->assertUnprocessable()->assertJsonValidationErrors('image');
+        }
+        $this->assertSame([], Storage::disk('public')->files('catalog'));
     }
 }

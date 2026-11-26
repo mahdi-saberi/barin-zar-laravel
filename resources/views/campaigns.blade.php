@@ -9,7 +9,9 @@
                 @endif
                 <div class="campaign-copy">
                     <h3>{{ $promotion['name'] }}</h3>
-                    @if(!empty($promotion['description']))<p>{{ $promotion['description'] }}</p>@endif
+                    @if(!empty($promotion['description']))
+                        <div class="rich-content">{{ \App\Support\RichText::render($promotion, 'description') }}</div>
+                    @endif
                     @if(!empty($promotion['discount_bps']))<p class="campaign-discount">{{ $promotion['discount_bps'] / 100 }}٪ تخفیف روی اجرت و سود</p>@endif
                     @if(!empty($promotion['link']))<a class="text-link" href="{{ $promotion['link'] }}">مشاهده پیشنهاد <span aria-hidden="true">←</span></a>@endif
                 </div>
