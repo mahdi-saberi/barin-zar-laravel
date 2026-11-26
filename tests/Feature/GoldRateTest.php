@@ -56,4 +56,25 @@ class GoldRateTest extends TestCase
             ->assertJsonPath('datetime', null);
         Http::assertNothingSent();
     }
+
+    public function test_scheduler_reports_provider_failure_and_keeps_the_last_rate_and_quotes(): void
+    {
+        $url = 'https://rates.example.test/gold';
+        config(['barin.integrations' => ['rates.example.test']]);
+        Entry::putData('settings', 'store', ['rate_url' => $url, 'rate_path' => 'price', 'rate_unit' => 'rial']);
+        Entry::putData('product', 'piece', ['name' => 'دمو', 'milligrams' => 1000, 'labor' => 0, 'profit_bps' => 0, 'tax_bps' => 0, 'discount_bps' => 0]);
+        Http::preventStrayRequests()->fake([$url => Http::sequence()->push(['price' => '۲۵۷٬۸۰۰٬۰۰۰'])->pushStatus(401)]);
+
+        $this->travelTo(Carbon::parse('2026-03-20T20:45:00+00:00'));
+        $this->artisan('schedule:run')->assertSuccessful();
+        $this->assertSame('updated', Entry::getData('rate', 'scheduled')['state']);
+        $rate = Entry::getData('rate', 'latest');
+        $this->travel(1)->minute();
+        $this->artisan('schedule:run')->assertSuccessful();
+        $this->assertSame($rate, Entry::getData('rate', 'latest'));
+        $this->assertSame('error', Entry::getData('rate', 'scheduled')['state']);
+        $this->assertStringContainsString('401', Entry::getData('rate', 'scheduled')['message']);
+        $this->getJson('/gold-rate?products[]=piece')->assertOk()
+            ->assertJsonPath('value', 25780000)->assertJsonPath('quotes.piece.total', 25780000);
+    }
 }

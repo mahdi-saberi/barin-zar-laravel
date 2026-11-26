@@ -35,6 +35,9 @@ if args and args[0] == 'docker/setup-mode.php':
             sys.exit(1)
     if not os.environ.get('APP_KEY', cfg.get('APP_KEY')):
         sys.exit(2)
+    if args[1:] == ['--scheduler']:
+        print('yes' if os.environ.get('BARIN_RUN_SCHEDULER', cfg.get('BARIN_RUN_SCHEDULER', 'true')) == 'true' else 'no', end='')
+        sys.exit(0)
     print(os.environ.get('BARIN_DB_SETUP', cfg.get('BARIN_DB_SETUP', 'off')), end='')
 '''
 EXEC_STUB = r'''#!/usr/bin/python3
@@ -61,10 +64,13 @@ class StartupTests(unittest.TestCase):
             p = self.bin / name
             p.write_text(body)
             p.chmod(0o755)
+        tini = self.bin / 'tini'
+        tini.write_text(EXEC_STUB)
+        tini.chmod(0o755)
         self.log = self.root / 'calls.jsonl'
         self.log.touch(mode=0o660)
         self.env = os.environ.copy()
-        for key in ['APP_KEY', 'BARIN_DB_SETUP']:
+        for key in ['APP_KEY', 'BARIN_DB_SETUP', 'BARIN_RUN_SCHEDULER']:
             self.env.pop(key, None)
         self.env.update(PATH=str(self.bin) + ':' + os.environ['PATH'], BARIN_TEST_LOG=str(self.log))
         self.install_log = self.root / 'install.json'
@@ -111,7 +117,8 @@ class StartupTests(unittest.TestCase):
         self.assertEqual(calls[0]['uid'], os.geteuid())
         self.assertEqual(calls[1]['args'][1], 'migrate')
         self.assertEqual(calls[2]['args'][1], 'db:seed')
-        self.assertEqual(calls[-1]['entrypoint'], ['apache2-foreground'])
+        self.assertEqual(calls[3]['args'], ['docker/setup-mode.php', '--scheduler'])
+        self.assertEqual(calls[-1]['entrypoint'], ['-g', '--', 'bash', 'docker/run-web.sh', 'apache2-foreground'])
 
     def test_old_symlink_is_replaced_without_changing_persistent_file(self):
         (self.app / '.env').symlink_to(self.persistent)
@@ -140,13 +147,19 @@ class StartupTests(unittest.TestCase):
         self.env['BARIN_DB_SETUP'] = 'off'
         result = self.start('apache2-foreground')
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(len(self.calls()), 2)
+        self.assertEqual(len(self.calls()), 3)
 
     def test_migrate_mode_does_not_seed(self):
         self.env['BARIN_DB_SETUP'] = 'migrate'
         result = self.start('apache2-foreground')
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(len(self.calls()), 3)
+        self.assertEqual(len(self.calls()), 4)
+
+    def test_opt_out_when_a_separate_scheduler_exists(self):
+        self.persistent.write_text(self.persistent.read_text() + 'BARIN_RUN_SCHEDULER=false\n')
+        result = self.start('apache2-foreground')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.calls()[-1]['entrypoint'], ['apache2-foreground'])
         self.assertEqual(self.calls()[1]['args'][1], 'migrate')
 
     def test_legacy_key_file_still_works(self):

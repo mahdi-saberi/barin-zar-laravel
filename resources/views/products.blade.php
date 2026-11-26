@@ -14,7 +14,7 @@
                 @endif
                 @if(!$piece['stock'])<span class="product-unavailable">ناموجود</span>@endif
             </a>
-            <div class="product-caption">
+            <div class="product-caption" data-quote-slug="{{ $item->slug }}">
                 @if(!empty($preview))
                     <h4><a href="{{ route('product.show', $item->slug) }}">{{ $piece['name'] }}</a></h4>
                 @elseif($mode === 'catalog')
@@ -23,11 +23,8 @@
                     <h3><a href="{{ route('product.show', $item->slug) }}">{{ $piece['name'] }}</a></h3>
                 @endif
                 <p class="product-spec"><bdi>{{ number_format($piece['milligrams'] / 1000, 3) }}</bdi> گرم <span aria-hidden="true">·</span> طلای ۱۸ عیار</p>
-                @if(!empty($rate['value']))
-                    <p class="product-price"><strong><bdi>{{ number_format($quotes[$item->slug]['total']) }}</bdi></strong> تومان</p>
-                @else
-                    <p class="product-spec">در انتظار نرخ طلا</p>
-                @endif
+                <p class="product-price" data-quote-price @if(empty($rate['value'])) hidden @endif><strong><bdi data-quote-field="total">{{ number_format($quotes[$item->slug]['total']) }}</bdi></strong> تومان</p>
+                <p class="product-spec" data-quote-missing @if(!empty($rate['value'])) hidden @endif>در انتظار نرخ طلا</p>
             </div>
         </article>
     @empty

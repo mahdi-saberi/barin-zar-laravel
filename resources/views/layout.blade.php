@@ -33,11 +33,14 @@
             <input type="search" name="q" aria-label="جست‌وجو در محصولات" value="{{ $filters['q'] ?? '' }}" placeholder="جست‌وجو در محصولات">
             <button type="submit" aria-label="جست‌وجو"><span class="search-mark" aria-hidden="true"></span></button>
         </form>
-        <a class="site-basket" href="{{ url('/cart') }}" aria-label="سبد خرید، {{ $cart->count() }} محصول">
-            <span class="bag-mark" aria-hidden="true"></span>
-            <span class="basket-label">سبد خرید</span>
-            <span class="basket-count" aria-hidden="true">{{ $cart->count() }}</span>
-        </a>
+        <div class="site-actions">
+            <a class="site-account" href="{{ route(auth()->check() ? 'account.index' : 'account.login') }}" aria-label="{{ auth()->check() ? 'حساب کاربری' : 'ورود و ثبت‌نام' }}">{{ auth()->check() ? 'حساب' : 'ورود' }}</a>
+            <a class="site-basket" href="{{ route('cart.show') }}" aria-label="سبد خرید، {{ $cart->count() }} محصول">
+                <span class="bag-mark" aria-hidden="true"></span>
+                <span class="basket-label">سبد خرید</span>
+                <span class="basket-count" aria-hidden="true">{{ $cart->count() }}</span>
+            </a>
+        </div>
     </div>
 </header>
 <main id="main">

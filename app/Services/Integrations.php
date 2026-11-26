@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Entry;
+use App\Support\IranianIdentity;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
@@ -25,6 +26,12 @@ class Integrations
     {
         $settings = Entry::getData('settings', 'store');
         $value = $this->endpoint($settings, 'rate')->get($settings['rate_url'])->throw()->json($settings['rate_path']);
+        if (is_string($value)) {
+            $value = IranianIdentity::digits($value);
+            if (preg_match('/\A[0-9]{1,3}(?:[,٬][0-9]{3})+(?:[.٫][0-9]+)?\z/u', $value)) {
+                $value = str_replace([',', '٬', '٫'], ['', '', '.'], $value);
+            }
+        }
         if (!is_numeric($value) || $value <= 0 || $value > 10000000000) {
             throw ValidationException::withMessages(['rate_url' => 'پاسخ سرویس نرخ معتبر ندارد.']);
         }

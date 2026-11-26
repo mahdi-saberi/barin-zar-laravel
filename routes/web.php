@@ -1,20 +1,36 @@
 <?php
 
+use App\Http\Controllers\Account;
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\CheckoutPayment;
 use App\Http\Controllers\Store;
 use App\Models\Entry;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [Store::class, 'show'])->name('home');
 Route::get('/shop', [Store::class, 'catalog'])->name('shop.index');
 Route::get('/shop/category/{category}', [Store::class, 'catalog'])->name('shop.category');
 Route::get('/gold-rate', [Store::class, 'goldRate'])->name('shop.gold-rate');
-Route::get('/cart', fn (Request $request, Store $store) => $store->show($request, 'cart'));
+Route::get('/cart', fn (Request $request, Store $store) => $store->show($request, 'cart'))->name('cart.show');
 Route::get('/product/{slug}', fn (Request $request, Store $store, string $slug) => $store->show($request, 'product', $slug))->name('product.show');
 Route::get('/page/{slug}', fn (Request $request, Store $store, string $slug) => $store->show($request, 'page', $slug))->name('page.show');
 Route::post('/cart/{slug}', [Store::class, 'changeCart'])->block()->name('cart.change');
-Route::post('/order', [Store::class, 'order'])->middleware('throttle:8,1')->block()->name('order.store');
+Route::post('/order', [Store::class, 'order'])->middleware(['auth', 'throttle:8,1'])->block()->name('order.store');
+Route::get('/account/login', [Account::class, 'loginForm'])->name('account.login');
+Route::post('/account/login', [Account::class, 'login'])->middleware('throttle:6,1')->name('account.authenticate');
+Route::get('/account/register', [Account::class, 'registerForm'])->name('account.register');
+Route::post('/account/register', [Account::class, 'register'])->middleware('throttle:6,1')->name('account.save-profile');
+Route::middleware('auth')->group(function () {
+    Route::get('/account', [Account::class, 'index'])->name('account.index');
+    Route::post('/account/logout', [Account::class, 'logout'])->name('account.logout');
+    Route::get('/orders/{reference}', [CheckoutPayment::class, 'show'])->whereUuid('reference')->name('order.show');
+    Route::post('/orders/{reference}/pay', [CheckoutPayment::class, 'start'])->whereUuid('reference')->middleware('throttle:8,1')->name('payment.start');
+    Route::post('/orders/{reference}/check', [CheckoutPayment::class, 'check'])->whereUuid('reference')->middleware('throttle:8,1')->name('payment.check');
+});
+Route::match(['get', 'post'], '/payments/return/{reference}', [CheckoutPayment::class, 'returned'])
+    ->whereUuid('reference')->withoutMiddleware(ValidateCsrfToken::class)->middleware('throttle:60,1')->name('payment.return');
 Route::get('/robots.txt', fn () => response("User-agent: *\nDisallow: /admin\nDisallow: /cart\nSitemap: ".url('/sitemap.xml')."\n", 200, ['Content-Type' => 'text/plain']));
 Route::get('/sitemap.xml', function () {
     $settings = Entry::where('kind', 'seo')->get()->keyBy('slug');
@@ -54,5 +70,8 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::post('/image/{file}/publish', [Admin::class, 'publishImage'])->name('admin.images.publish');
     Route::post('/upload', [Admin::class, 'upload'])->name('admin.upload');
     Route::post('/orders/{id}', [Admin::class, 'status'])->name('admin.orders.status');
+    Route::post('/payments/{payment}/check', [Admin::class, 'verifyPayment'])->middleware('throttle:12,1')->name('admin.payments.check');
+    Route::post('/gateways/{provider}', [Admin::class, 'saveGateway'])->name('admin.gateways.save');
+    Route::post('/users/{user}/role', [Admin::class, 'role'])->name('admin.users.role');
     Route::post('/logout', [Admin::class, 'logout'])->name('admin.logout');
 });

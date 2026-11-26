@@ -31,7 +31,7 @@
     <div class="admin-actions">
         @if(isset($creating[$tab]) && !$entryForm)
             <a class="admin-button admin-primary" href="{{ route('admin.index', ['tab' => $tab, 'create' => 1]) }}">{{ $creating[$tab] }}</a>
-        @elseif($tab === 'finance')
+        @elseif($tab === 'finance' && $can['finance'])
             <a class="admin-button" href="{{ route('admin.export', $filters) }}">خروجی CSV</a>
         @elseif($tab === 'product' && $editingEntry && ($record['published'] ?? true))
             <a class="admin-button" href="{{ route('product.show', $entry->slug) }}" target="_blank" rel="noopener">مشاهده در فروشگاه</a>
@@ -45,6 +45,13 @@
         @break
     @case('finance')
         @include('admin.finance')
+        @break
+    @case('gateways')
+        @include('admin.gateways')
+        @break
+    @case('customers')
+    @case('users')
+        @include('admin.directory')
         @break
     @case('studio')
         @include('admin.studio')

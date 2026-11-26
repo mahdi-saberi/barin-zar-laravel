@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Entry;
+use App\Models\Order;
+use App\Services\Payments\Gateways;
 use App\Services\Pricing;
 use App\Support\GoldRateDisplay;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,6 +14,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class Store extends Controller
 {
@@ -25,9 +29,18 @@ class Store extends Controller
 
     public function __construct(private readonly Pricing $pricing) {}
 
-    public function goldRate(): JsonResponse
+    public function goldRate(Request $request): JsonResponse
     {
-        return response()->json(GoldRateDisplay::from(Entry::getData('rate', 'latest')), headers: [
+        $rate = Entry::getData('rate', 'latest');
+        $data = GoldRateDisplay::from($rate);
+        $slugs = $request->validate(['products' => 'sometimes|array|max:30', 'products.*' => 'alpha_dash:ascii|max:90'])['products'] ?? [];
+        if ($slugs && $data['value']) {
+            $campaigns = $this->pricing->activeCampaigns();
+            $data['quotes'] = Entry::products()->published()->whereIn('slug', $slugs)->get()->keyBy('slug')
+                ->map(fn (Entry $product) => $this->pricing->forProduct($product, $rate, $campaigns));
+        }
+
+        return response()->json($data, headers: [
             'Cache-Control' => 'private, no-store',
         ]);
     }
@@ -48,7 +61,7 @@ class Store extends Controller
         return $this->show($request, 'catalog', $category);
     }
 
-    public function show(Request $request, string $mode = 'home', ?string $slug = null)
+    public function show(Request $request, string $mode = 'home', ?string $slug = null, array $extras = [])
     {
         $categories = config('barin.categories');
         $category = $mode === 'catalog' ? $slug : null;
@@ -93,6 +106,7 @@ class Store extends Controller
                     $request->session()->put('cart', $available->all());
                 }
                 $cart = $available;
+                $extras['gateways'] = app(Gateways::class)->available();
                 break;
         }
         if ($mode !== 'cart' && $cart->isNotEmpty()) {
@@ -120,7 +134,7 @@ class Store extends Controller
         ) + [
             'checkoutKey' => $mode === 'cart' ? hash('sha256', json_encode([$cart->all(), $quotes->sortKeys()])) : null,
             'weightRanges' => self::WEIGHT_RANGES,
-        ]);
+        ] + $extras);
     }
 
     private function catalogProducts(Builder $query, ?string $category, array $filters, array $rate, Collection $campaigns): LengthAwarePaginator
@@ -182,45 +196,59 @@ class Store extends Controller
         return redirect('/cart');
     }
 
-    public function order(Request $request)
+    public function order(Request $request, Gateways $gateways)
     {
-        $customer = $request->validate([
-            'name' => 'required|string|max:120', 'mobile' => 'required|string|max:24',
+        $user = $request->user();
+        if (!$user->checkoutProfileComplete()) {
+            return redirect()->route('account.register');
+        }
+        $available = $gateways->available();
+        $data = $request->validate([
             'delivery' => 'required|in:pickup,shipping', 'address' => 'required_if:delivery,shipping|nullable|string|max:500',
+            'gateway' => ['required', Rule::in($available->isEmpty() ? ['manual'] : $available->keys()->all())],
+            'checkout_key' => 'required|string|size:64',
         ]);
         $slugs = $request->session()->get('cart', []);
         if (!$slugs) {
             return back()->withErrors(['cart' => 'سبد خرید خالی است.']);
         }
-        $reference = (string) Str::uuid();
-        DB::transaction(function () use ($slugs, $customer, $reference, $request) {
+        $order = DB::transaction(function () use ($slugs, $data, $user) {
             $rate = Entry::getData('rate', 'latest');
-            if (!$rate || ($rate['source'] === 'api' && now()->diffInMinutes(\Illuminate\Support\Carbon::parse($rate['timestamp']), true) > 20)) {
-                throw \Illuminate\Validation\ValidationException::withMessages(['cart' => 'نرخ به‌روز در دسترس نیست.']);
+            if (empty($rate['value']) || ($rate['source'] === 'api' && (empty($rate['timestamp']) || now()->diffInMinutes(\Illuminate\Support\Carbon::parse($rate['timestamp']), true) > 20))) {
+                throw ValidationException::withMessages(['cart' => 'نرخ به‌روز در دسترس نیست.']);
             }
             if ($rate['source'] === 'sample' && app()->isProduction()) {
-                throw \Illuminate\Validation\ValidationException::withMessages(['cart' => 'برای ثبت سفارش، نرخ واقعی باید فعال شود.']);
+                throw ValidationException::withMessages(['cart' => 'برای ثبت سفارش، نرخ واقعی باید فعال شود.']);
             }
             $campaigns = $this->pricing->activeCampaigns();
             $products = Entry::products()->published()->whereIn('slug', $slugs)->orderBy('id')->lockForUpdate()->get();
             $quotes = $products->keyBy('slug')->map(fn (Entry $item) => $this->pricing->forProduct($item, $rate, $campaigns));
-            if (count($slugs) !== $products->count() || !hash_equals(hash('sha256', json_encode([$slugs, $quotes->sortKeys()])), (string) $request->input('checkout_key'))) {
-                throw \Illuminate\Validation\ValidationException::withMessages(['cart' => 'سبد یا قیمت تغییر کرد. قیمت جدید را بررسی کنید.']);
+            if (count($slugs) !== $products->count() || !hash_equals(hash('sha256', json_encode([$slugs, $quotes->sortKeys()])), $data['checkout_key'])) {
+                throw ValidationException::withMessages(['cart' => 'سبد یا قیمت تغییر کرد. قیمت جدید را بررسی کنید.']);
             }
             $lines = [];
             foreach ($products as $p) {
-                $data = $p->data;
-                if ($data['stock'] < 1) {
-                    throw \Illuminate\Validation\ValidationException::withMessages(['cart' => $data['name'].' موجود نیست.']);
+                $piece = $p->data;
+                if ($piece['stock'] < 1) {
+                    throw ValidationException::withMessages(['cart' => $piece['name'].' موجود نیست.']);
                 }
-                $lines[] = $quotes[$p->slug] + ['slug' => $p->slug, 'name' => $data['name'], 'cost' => $data['cost']];
-                $data['stock']--;
-                $p->update(['data' => $data]);
+                $lines[] = $quotes[$p->slug] + ['slug' => $p->slug, 'name' => $piece['name'], 'cost' => $piece['cost'] ?? 0, 'milligrams' => $piece['milligrams']];
+                $piece['stock']--;
+                $p->update(['data' => $piece]);
             }
-            DB::table('orders')->insert(['reference' => $reference, 'customer' => json_encode($customer),
-                'lines' => json_encode($lines), 'total' => array_sum(array_column($lines, 'total')), 'created_at' => now()]);
+            $order = $user->orders()->create([
+                'reference' => (string) Str::uuid(), 'status' => 'pending', 'gateway' => $data['gateway'],
+                'customer' => ['name' => $user->name, 'mobile' => $user->mobile, 'delivery' => $data['delivery']],
+                'shipping_address' => $data['delivery'] === 'shipping' ? $data['address'] : null,
+                'lines' => $lines, 'total' => array_sum(array_column($lines, 'total')),
+                'expires_at' => $data['gateway'] === 'manual' ? null : now()->addMinutes(20),
+            ]);
+            $order->record('created', $user->id);
+
+            return $order;
         }, 3);
         $request->session()->forget('cart');
-        return redirect('/cart')->with('notice', 'سفارش ثبت شد. کد پیگیری '.$reference);
+
+        return redirect()->route('order.show', $order->reference)->with('notice', 'سفارش ثبت شد.');
     }
 }

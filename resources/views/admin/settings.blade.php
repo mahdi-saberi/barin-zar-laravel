@@ -2,6 +2,7 @@
     <div>
         <h2 id="settings-rate">نرخ هر گرم طلای ۱۸ عیار</h2>
         @include('admin.rate-value')
+        @include('admin.rate-health')
     </div>
     @if(!empty($record['rate_url']))
         <form method="post" action="{{ route('admin.rate', [], false) }}">
