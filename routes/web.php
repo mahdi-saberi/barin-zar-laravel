@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [Store::class, 'show'])->name('home');
 Route::get('/shop', [Store::class, 'catalog'])->name('shop.index');
 Route::get('/shop/category/{category}', [Store::class, 'catalog'])->name('shop.category');
+Route::get('/gold-rate', [Store::class, 'goldRate'])->name('shop.gold-rate');
 Route::get('/cart', fn (Request $request, Store $store) => $store->show($request, 'cart'));
 Route::get('/product/{slug}', fn (Request $request, Store $store, string $slug) => $store->show($request, 'product', $slug))->name('product.show');
 Route::get('/page/{slug}', fn (Request $request, Store $store, string $slug) => $store->show($request, 'page', $slug))->name('page.show');

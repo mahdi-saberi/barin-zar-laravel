@@ -8,7 +8,7 @@ Schedule::call(function () {
     if (!empty(Entry::getData('settings', 'store')['rate_url'])) {
         app(Integrations::class)->refresh();
     }
-})->name('barin-gold-rate')->everyFiveMinutes()->withoutOverlapping();
+})->name('barin-gold-rate')->everyMinute()->withoutOverlapping(2);
 
 \Illuminate\Support\Facades\Artisan::command('barin:admin {email}', function () {
     $email = $this->argument('email');

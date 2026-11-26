@@ -23,18 +23,24 @@
 @foreach($sections as $section)
     @switch($section)
         @case('categories')
-            <section id="gold-categories" class="wrap section" aria-labelledby="category-heading">
+            <section id="gold-categories" class="wrap section" aria-labelledby="category-heading" data-category-slider>
                 <div class="section-heading">
                     <h2 id="category-heading">دسته‌های طلا</h2>
-                    <a class="text-link" href="{{ route('shop.index') }}">همهٔ محصولات <span aria-hidden="true">←</span></a>
+                    <div class="category-actions">
+                        <a class="text-link" href="{{ route('shop.index') }}">همهٔ محصولات <span aria-hidden="true">←</span></a>
+                        <div class="slider-controls" data-slider-controls hidden>
+                            <button type="button" aria-label="دسته‌های قبلی" aria-controls="category-slider" data-slider-previous>→</button>
+                            <button type="button" aria-label="دسته‌های بعدی" aria-controls="category-slider" data-slider-next>←</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="category-gallery">
+                <div class="category-gallery" id="category-slider" role="region" aria-labelledby="category-heading" tabindex="0">
                     @foreach($categories as $key => $label)
                         @php($cover = $collections->get($key)?->first()?->data['images'][0] ?? null)
                         <a class="category-card" href="{{ route('shop.category', $key) }}">
                             <span class="category-media">
                                 @if($cover)
-                                    <img src="{{ $cover }}" width="390" height="455" alt="" loading="lazy" decoding="async">
+                                    <img src="{{ $cover }}" width="390" height="360" alt="" loading="lazy" decoding="async">
                                 @else
                                     <span class="foil-mark" aria-hidden="true"></span>
                                 @endif

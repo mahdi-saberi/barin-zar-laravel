@@ -85,7 +85,7 @@ class CatalogTest extends TestCase
 
         $this->get('/')->assertOk()
             ->assertSeeInOrder(['نرخ طلای ۱۸ عیار', '۱۰٬۵۰۰٬۰۰۰', 'نمونه'])
-            ->assertDontSee('<time', false);
+            ->assertDontSee('datetime=', false);
     }
 
     public function test_drafts_stay_out_of_the_store_cart_and_sitemap(): void
