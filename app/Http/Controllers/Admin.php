@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Entry;
+use App\Services\ImageStudio;
 use App\Services\Integrations;
 use App\Services\Pricing;
+use App\Support\RichText;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -14,7 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class Admin extends Controller
@@ -41,7 +43,7 @@ class Admin extends Controller
 
     private const CORE_PAGES = ['home', 'catalog', 'guide'];
 
-    public function __construct(private readonly Pricing $pricing) {}
+    public function __construct(private readonly Pricing $pricing, private readonly ImageStudio $studio) {}
 
     private function authorizeAdmin(): void
     {
@@ -79,7 +81,7 @@ class Admin extends Controller
     {
         return [
             'page' => [
-                'name' => ['عنوان', 'required|string|max:140'], 'description' => ['متن', 'nullable|string|max:12000', 'textarea'],
+                'name' => ['عنوان', 'required|string|max:140'], 'description' => ['متن', 'nullable|string|max:12000', 'richtext'],
                 'hero' => ['آدرس تصویر', 'nullable|string|max:500'], 'badge' => ['بالانویس', 'nullable|string|max:120'],
                 'button' => ['متن دکمه اصلی', 'nullable|string|max:80'],
                 'products_heading' => ['عنوان مجموعه‌های طلا', 'nullable|string|max:100'],
@@ -87,12 +89,12 @@ class Admin extends Controller
                 'budget_low' => ['بودجه اول (تومان)', 'nullable|integer|between:1,100000000000', 'number'],
                 'budget_high' => ['بودجه دوم (تومان)', 'nullable|integer|between:1,100000000000', 'number'],
                 'guide_heading' => ['عنوان بخش راهنما', 'nullable|string|max:100'],
-                'guide_text' => ['متن بخش راهنما', 'nullable|string|max:500'],
+                'guide_text' => ['متن بخش راهنما', 'nullable|string|max:500', 'richtext'],
                 'guide_image' => ['تصویر بخش راهنما', 'nullable|string|max:500'],
                 'sections' => ['ترتیب بخش‌ها (categories, products, campaigns, budget, guide)', 'nullable|string|max:160'],
             ],
             'product' => [
-                'name' => ['نام', 'required|string|max:140'], 'description' => ['توضیحات', 'nullable|string|max:12000', 'textarea'],
+                'name' => ['نام', 'required|string|max:140'], 'description' => ['توضیحات', 'nullable|string|max:12000', 'richtext'],
                 'category' => ['دسته', 'required|in:'.implode(',', array_keys(config('barin.categories'))), 'category'],
                 'milligrams' => ['وزن به میلی‌گرم', 'required|integer|between:1,250000', 'number'],
                 'labor' => ['اجرت (تومان)', 'required|integer|between:0,100000000000', 'number'],
@@ -111,7 +113,7 @@ class Admin extends Controller
                 'noindex' => ['جلوگیری از نمایش در نتایج جست‌وجو', 'nullable|boolean', 'checkbox'],
             ],
             'campaign' => [
-                'name' => ['عنوان', 'required|string|max:140'], 'description' => ['پیام', 'nullable|string|max:500'],
+                'name' => ['عنوان', 'required|string|max:140'], 'description' => ['پیام', 'nullable|string|max:500', 'richtext'],
                 'image' => ['آدرس بنر', 'nullable|string|max:500'], 'link' => ['مسیر داخلی دکمه', 'nullable|string|max:500'],
                 'start' => ['شروع', 'required|date_format:Y-m-d', 'date'], 'end' => ['پایان', 'required|date_format:Y-m-d|after_or_equal:start', 'date'],
                 'placement' => ['جایگاه', 'required|in:home,product,both', 'placement'],
@@ -126,7 +128,7 @@ class Admin extends Controller
                 'ai_url' => ['آدرس API سازگار با OpenAI Images Edits', 'nullable|url:https|max:800'],
                 'ai_model' => ['مدل تولید تصویر', 'nullable|string|max:100'],
                 'ai_token' => ['توکن استودیو (خالی = حفظ کلید)', 'nullable|string|max:1000', 'password'],
-                'brand' => ['نام فروشگاه', 'nullable|string|max:100'], 'footer' => ['متن انتهای سایت', 'nullable|string|max:350'],
+                'brand' => ['نام فروشگاه', 'nullable|string|max:100'], 'footer' => ['متن انتهای سایت', 'nullable|string|max:350', 'richtext'],
             ],
         ];
     }
@@ -140,11 +142,11 @@ class Admin extends Controller
         $data = match ($tab) {
             'dashboard' => $this->dashboard(),
             'finance' => $this->finance($request),
-            'studio' => ['presets' => $this->presets()],
+            'studio' => ['presets' => $this->studio->presets()],
             'settings' => [
                 'kind' => 'settings',
                 'fields' => $this->fields()['settings'],
-                'record' => Entry::getData('settings', 'store') + ['rate_unit' => 'toman', 'ai_model' => 'gpt-image-1'],
+                'record' => $this->studio->settings() + ['rate_unit' => 'toman'],
                 'formMode' => true,
                 'rate' => Entry::getData('rate', 'latest'),
             ],
@@ -203,7 +205,7 @@ class Admin extends Controller
                 'record' => ($entry?->data ?? []) + $defaults,
                 'newSlug' => $newSlug,
                 'formMode' => true,
-            ];
+            ] + ($kind === 'product' ? ['presets' => $this->studio->presets()] : []);
         }
 
         $search = $request->query('q');
@@ -312,8 +314,31 @@ class Admin extends Controller
         if ($kind === 'product') {
             $rules['original_stock'] = 'required_with:edit|nullable|integer|min:0';
         }
-        $validated = $request->validate($rules + array_map(fn ($field) => $field[1], $fields), [],
-            ['slug' => 'شناسه', ...array_map(fn ($field) => $field[0], $fields)]);
+        $richRules = array_map(fn ($field) => $field[1], array_filter($fields, fn ($field) => ($field[2] ?? '') === 'richtext'));
+        foreach (array_keys($richRules) as $name) {
+            $rules[$name] = 'nullable|string|max:60000';
+            $rules[$name.'_html'] = 'sometimes|boolean';
+        }
+        $labels = ['slug' => 'شناسه', ...array_map(fn ($field) => $field[0], $fields)];
+        $validated = $request->validate($rules + array_map(fn ($field) => $field[1], $fields), [], $labels);
+        $text = [];
+        foreach (array_keys($richRules) as $name) {
+            $flag = $name.'_html';
+            if (!array_key_exists($name, $validated)) {
+                unset($validated[$flag]);
+                continue;
+            }
+
+            $validated[$flag] = (bool) ($validated[$flag] ?? false);
+            if ($validated[$flag]) {
+                $validated[$name] = RichText::sanitize($validated[$name] ?? '');
+            }
+            $text[$name] = RichText::text($validated, $name);
+            if ($text[$name] === '') {
+                $validated[$name] = null;
+            }
+        }
+        Validator::make($text, $richRules, [], $labels)->validate();
         $slug = $kind === 'settings' ? 'store' : $validated['slug'];
         $edit = $validated['edit'] ?? null;
         $originalStock = (int) ($validated['original_stock'] ?? 0);
@@ -406,11 +431,6 @@ class Admin extends Controller
         return redirect()->route('admin.index', ['tab' => $kind])->with('notice', 'رکورد حذف شد.');
     }
 
-    private function presets(): array
-    {
-        return json_decode(file_get_contents(public_path('assets/presets.json')), true);
-    }
-
     public function refresh(Integrations $service)
     {
         $this->authorizeAdmin();
@@ -422,30 +442,12 @@ class Admin extends Controller
         return back()->with('notice', 'نرخ از API به‌روز شد.');
     }
 
-    public function generate(Request $request, Integrations $service)
+    public function generate(Request $request)
     {
         $this->authorizeAdmin();
-        $data = $request->validate(['preset' => 'required|integer', 'image' => 'required|image|mimes:png,jpg,jpeg,webp|max:8192']);
-        $preset = collect($this->presets())->firstWhere('id', $data['preset']);
-        abort_unless($preset, 422);
-        $settings = Entry::getData('settings', 'store');
-        $image = $data['image'];
-        try {
-            $response = $service->endpoint($settings, 'ai')->attach('image', fopen($image->path(), 'rb'), 'product.'.$image->extension())
-                ->post($settings['ai_url'], ['model' => ($settings['ai_model'] ?? '') ?: 'gpt-image-1', 'prompt' => $preset['prompt'], 'size' => '1024x1024'])
-                ->throw()->json('data.0.b64_json');
-        } catch (HttpClientException) {
-            return back()->withErrors(['image' => 'سرویس تصویر پاسخ موفق نداد. تنظیمات و اعتبار سرویس را بررسی کنید.']);
-        }
-        $bytes = is_string($response) && strlen($response) < 24000000 ? base64_decode($response, true) : false;
-        $mime = $bytes ? (new \finfo(FILEINFO_MIME_TYPE))->buffer($bytes) : '';
-        $extensions = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
-        if (!isset($extensions[$mime])) {
-            return back()->withErrors(['image' => 'خروجی تصویری قابل ذخیره دریافت نشد.']);
-        }
-        $path = 'studio/'.Str::uuid().'.'.$extensions[$mime];
-        abort_unless(Storage::disk('local')->put($path, $bytes), 500);
-        return back()->with('generated', $path);
+        $data = $request->validate(['preset' => 'required|integer', 'image' => ImageStudio::IMAGE_RULE]);
+
+        return back()->with('generated', $this->studio->generate($data['image'], (int) $data['preset']));
     }
 
     public function studioImage(string $file)
@@ -482,14 +484,17 @@ class Admin extends Controller
     public function upload(Request $request)
     {
         $this->authorizeAdmin();
-        $data = $request->validate(['image' => 'required|image|mimes:png,jpg,jpeg,webp|max:8192']);
-        $path = $data['image']->store('catalog', 'public');
+        $data = $request->validate(['image' => ImageStudio::IMAGE_RULE, 'preset' => 'sometimes|required|integer']);
+        $generated = isset($data['preset']);
+        $path = $generated
+            ? $this->studio->generate($data['image'], (int) $data['preset'], forCatalog: true)
+            : $data['image']->store('catalog', 'public');
         abort_unless($path, 500);
         $url = '/storage/'.$path;
 
         return $request->expectsJson()
             ? response()->json(['path' => $url])
-            : back()->with('upload', $url)->with('notice', 'تصویر بارگذاری شد.');
+            : back()->with('upload', $url)->with('notice', $generated ? 'تصویر استودیو در گالری ذخیره شد.' : 'تصویر بارگذاری شد.');
     }
 
     public function status(Request $request, int $id)

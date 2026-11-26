@@ -11,6 +11,7 @@
     <meta property="og:description" content="{{ $description }}">
     @if($ogImage)<meta property="og:image" content="{{ url($ogImage) }}">@endif
     <link rel="stylesheet" href="{{ asset('assets/storefront.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/rich-content.css') }}">
     <script defer src="{{ asset('assets/store.js') }}"></script>
     @if($schema)<script type="application/ld+json">{!! json_encode($schema, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!}</script>@endif
 </head>
@@ -55,7 +56,7 @@
         <div class="footer-brand">
             <span class="foil-mark" aria-hidden="true"></span>
             <strong>{{ $brand ?? 'گالری طلای برین‌زر' }}</strong>
-            <p>{{ $footer ?? 'گالری طلای ۱۸ عیار در بازار تهران' }}</p>
+            <div class="footer-description rich-content">{{ $footer }}</div>
         </div>
         <nav class="footer-links" aria-label="پیوندهای فروشگاه">
             <a href="{{ route('shop.index') }}">ویترین طلا</a>

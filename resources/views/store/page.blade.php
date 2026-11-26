@@ -5,5 +5,7 @@
     </nav>
     <h1>{{ $heading }}</h1>
     @if(!empty($page['hero']))<img src="{{ $page['hero'] }}" alt="" width="950" height="520" fetchpriority="high">@endif
-    @if(!empty($page['description']))<p class="prose">{{ $page['description'] }}</p>@endif
+    @if(!empty($page['description']))
+        <div class="prose rich-content">{{ \App\Support\RichText::render($page, 'description') }}</div>
+    @endif
 </article>

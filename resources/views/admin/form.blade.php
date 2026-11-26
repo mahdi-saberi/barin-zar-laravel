@@ -49,6 +49,9 @@
     @foreach($groups as $legend => $names)
         <fieldset class="admin-card admin-fieldset">
             <legend>{{ $legend }}</legend>
+            @if($kind === 'product' && in_array('images', $names, true))
+                @include('admin.product-images')
+            @endif
             <div class="admin-fields">
                 @if($loop->first && $kind !== 'settings')
                     @php($slugValue = $entry?->slug ?? old('slug', $newSlug))
@@ -65,20 +68,6 @@
                     @include('admin.field', ['field' => $fields[$name]])
                 @endforeach
             </div>
-            @if($kind === 'product' && in_array('images', $names, true))
-                @if(!empty($record['images']))
-                    <div class="admin-image-strip" aria-label="تصاویر فعلی">
-                        @foreach(array_filter($record['images']) as $i => $path)
-                            <img src="{{ $path }}" alt="{{ ($record['image_alts'][$i] ?? '') ?: 'تصویر '.($i + 1) }}" width="82" height="82" loading="lazy">
-                        @endforeach
-                    </div>
-                @endif
-                <div class="admin-inline-upload" data-inline-upload="{{ route('admin.upload', [], false) }}" hidden>
-                    <label>بارگذاری مستقیم<input type="file" accept="image/webp,image/jpeg,image/png" data-upload-file></label>
-                    <button class="admin-button" type="button" data-upload-button>افزودن تصویر</button>
-                    <small class="admin-upload-status" role="status" data-upload-message></small>
-                </div>
-            @endif
         </fieldset>
     @endforeach
     <div class="admin-actions admin-form-actions">

@@ -8,8 +8,9 @@
     <link rel="stylesheet" href="{{ asset('assets/style.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/modern.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/admin.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/rich-content.css') }}">
     <script defer src="{{ asset('assets/store.js') }}"></script>
-    <script defer src="{{ asset('assets/admin.js') }}"></script>
+    <script defer src="{{ asset('assets/admin.js') }}?v={{ filemtime(public_path('assets/admin.js')) }}"></script>
 </head>
 <body class="admin-page {{ isset($tabs) ? 'admin-authenticated' : 'admin-guest' }}">
 <a class="skip" href="#main">رفتن به محتوا</a>

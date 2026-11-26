@@ -27,7 +27,9 @@
         <div class="purchase-panel">
             <p class="detail-type">طلای ۱۸ عیار <span aria-hidden="true">·</span> <bdi>{{ number_format($data['milligrams'] / 1000, 3) }}</bdi> گرم</p>
             <h1>{{ $heading }}</h1>
-            @if(!empty($data['description']))<p class="detail-description">{{ $data['description'] }}</p>@endif
+            @if(!empty($data['description']))
+                <div class="detail-description rich-content">{{ \App\Support\RichText::render($data, 'description') }}</div>
+            @endif
             @if(!empty($rate['value']))
                 <div class="detail-price"><strong><bdi>{{ number_format($quote['total']) }}</bdi></strong> تومان</div>
             @endif

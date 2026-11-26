@@ -7,7 +7,7 @@
         <div class="hero-copy">
             <p class="hero-eyebrow"><span class="foil-mark" aria-hidden="true"></span>{{ $page['badge'] ?? 'گالری طلای ۱۸ عیار · بازار تهران' }}</p>
             <h1>{{ $heading }}</h1>
-            <p class="hero-description">{{ $page['description'] ?? 'قطعهٔ دلخواهتان را با دیدن جزئیات، عکس روی مدل و ریز قیمت انتخاب کنید.' }}</p>
+            <div class="hero-description rich-content">{{ \App\Support\RichText::render($page, 'description', 'قطعهٔ دلخواهتان را با دیدن جزئیات، عکس روی مدل و ریز قیمت انتخاب کنید.') }}</div>
             <div class="hero-actions">
                 <a class="button button-gold" href="{{ route('shop.index') }}">{{ $page['button'] ?? 'مشاهده ویترین طلا' }} <span aria-hidden="true">←</span></a>
                 @if(in_array('products', $sections, true) && $previews->isNotEmpty())
@@ -125,7 +125,7 @@
                     <img src="{{ $page['guide_image'] ?? '/assets/m2.webp' }}" width="640" height="520" alt="" loading="lazy" decoding="async">
                     <div class="guide-copy">
                         <h2>{{ $page['guide_heading'] ?? 'پیش از خرید' }}</h2>
-                        <p>{{ $page['guide_text'] ?? 'وزن، اندازه و ریز مبلغ هر قطعه را در صفحهٔ محصول ببینید.' }}</p>
+                        <div class="guide-description rich-content">{{ \App\Support\RichText::render($page, 'guide_text', 'وزن، اندازه و ریز مبلغ هر قطعه را در صفحهٔ محصول ببینید.') }}</div>
                         <a class="text-link" href="{{ route('page.show', 'guide') }}">راهنمای خرید <span aria-hidden="true">←</span></a>
                     </div>
                 </div>
