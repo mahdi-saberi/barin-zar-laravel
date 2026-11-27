@@ -353,6 +353,7 @@ class AdminStoreTest extends TestCase
 
         $secret = 'sk-secret-studio-token-9999';
         $url = 'https://api.openai.com/v1/images/edits';
+        $downloadUrl = 'https://cdn.example.test/out.png';
         Entry::putData('settings', 'store', [
             'ai_url' => $url,
             'ai_model' => 'gpt-image-1',
@@ -361,8 +362,10 @@ class AdminStoreTest extends TestCase
         Http::preventStrayRequests()->fake([
             $url => Http::sequence()
                 ->push(['error' => ['message' => 'Model access denied for sk-secret-studio-token-9999', 'code' => 'model_not_found']], 400)
-                ->push(['data' => [['url' => 'https://cdn.example.test/out.png']]], 200)
+                ->push(['data' => [['url' => 'http://127.0.0.1/private.png']]], 200)
+                ->push(['data' => [['url' => $downloadUrl]]], 200)
                 ->pushFailedConnection('cURL error 28: Operation timed out'),
+            $downloadUrl => Http::response('not-found', 404),
         ]);
 
         $this->postJson('/admin/image', ['image' => $reference, 'preset' => 1])
@@ -375,13 +378,17 @@ class AdminStoreTest extends TestCase
 
         $this->postJson('/admin/image', ['image' => $reference, 'preset' => 1])
             ->assertUnprocessable()
+            ->assertJsonPath('errors.image.0', fn (string $msg) => str_contains($msg, '404'));
+
+        $this->postJson('/admin/image', ['image' => $reference, 'preset' => 1])
+            ->assertUnprocessable()
             ->assertJsonPath('errors.image.0', fn (string $msg) => str_contains($msg, 'timed out'));
 
         $logs = $this->getJson('/admin/studio/logs')->assertOk()->json('logs');
-        $this->assertCount(5, $logs);
-        $this->assertSame(['connection', 'response_format', 'http_error', 'decrypt', 'config'], array_column($logs, 'stage'));
-        $this->assertSame(400, $logs[2]['http_status']);
-        $this->assertStringContainsString('model_not_found', $logs[2]['detail']);
+        $this->assertCount(6, $logs);
+        $this->assertSame(['connection', 'download', 'download', 'http_error', 'decrypt', 'config'], array_column($logs, 'stage'));
+        $this->assertSame(400, $logs[3]['http_status']);
+        $this->assertStringContainsString('model_not_found', $logs[3]['detail']);
         $this->assertStringNotContainsString($secret, json_encode($logs));
 
         $this->get('/admin?tab=studio')
@@ -396,5 +403,41 @@ class AdminStoreTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => 'orders']));
         $this->getJson('/admin/studio/logs')->assertForbidden();
         $this->postJson('/admin/studio/logs/clear')->assertForbidden();
+    }
+
+    public function test_studio_supports_json_generations_endpoint_and_url_download_without_leaking_bearer_token(): void
+    {
+        $this->signIn();
+        Storage::fake('local');
+        config(['barin.integrations' => ['api.gapgpt.ir']]);
+        $apiUrl = 'https://api.gapgpt.ir/v1/images/generations';
+        $fileUrl = 'https://files.gapgpt.ir/temp/output.png';
+        $finalUrl = 'https://cdn.gapgpt.ir/generated/final.png';
+        $output = file_get_contents(public_path('assets/m1.webp'));
+
+        Entry::putData('settings', 'store', [
+            'ai_url' => $apiUrl,
+            'ai_model' => 'gapgpt/qwen-image-2.1',
+            'ai_token' => Crypt::encryptString('gapgpt-token-123'),
+        ]);
+
+        Http::preventStrayRequests()->fake([
+            $apiUrl => Http::response(['data' => [['url' => $fileUrl]]], 200),
+            $fileUrl => Http::response('', 302, ['Location' => $finalUrl]),
+            $finalUrl => Http::response($output, 200, ['Content-Type' => 'image/webp']),
+        ]);
+
+        $reference = new UploadedFile(public_path('assets/p1.webp'), 'reference.webp', 'image/webp', null, true);
+        $result = $this->postJson('/admin/image', ['preset' => 1, 'image' => $reference])->assertOk()->json();
+        $this->get($result['path'])->assertOk();
+
+        Http::assertSent(fn (ClientRequest $request) => $request->url() === $apiUrl
+            && $request->hasHeader('Authorization', 'Bearer gapgpt-token-123')
+            && $request['model'] === 'gapgpt/qwen-image-2.1'
+            && $request['size'] === '1024x1024'
+            && !str_contains($request->header('Content-Type')[0] ?? '', 'multipart/form-data'));
+
+        Http::assertSent(fn (ClientRequest $request) => $request->url() === $finalUrl
+            && !$request->hasHeader('Authorization'));
     }
 }

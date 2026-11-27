@@ -21,6 +21,7 @@
     </div>
     <dl class="admin-studio-meta">
         <div><dt>نشانی سرویس</dt><dd dir="ltr">{{ $studioStatus['url'] ?? 'ثبت‌نشده' }}</dd></div>
+        <div><dt>نوع درخواست</dt><dd dir="ltr">{{ $studioStatus['mode'] ?? 'multipart-edits' }}</dd></div>
         <div><dt>مدل فعال</dt><dd dir="ltr">{{ $studioStatus['model'] ?? '-' }}</dd></div>
         <div><dt>توکن</dt><dd>{{ ($studioStatus['has_token'] ?? false) ? 'ثبت‌شده (رمزگذاری‌شده)' : 'ثبت‌نشده' }}</dd></div>
         <div><dt>میزبان‌های مجاز</dt><dd dir="ltr">{{ !empty($studioStatus['allowed_hosts']) ? implode(', ', $studioStatus['allowed_hosts']) : 'تعریف‌نشده' }}</dd></div>

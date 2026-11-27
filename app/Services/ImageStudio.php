@@ -9,6 +9,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -32,12 +33,15 @@ class ImageStudio
         'connection' => 'اتصال شبکه',
         'http_error' => 'پاسخ خطای سرویس',
         'response_format' => 'قالب پاسخ',
+        'download' => 'دریافت تصویر از نشانی',
         'storage' => 'ذخیره‌سازی فایل',
         'unexpected' => 'خطای غیرمنتظره',
         'success' => 'موفق',
     ];
 
     private const LOG_LIMIT = 15;
+
+    private const MAX_DOWNLOAD_BYTES = 18000000;
 
     public function __construct(private readonly Integrations $integrations) {}
 
@@ -103,6 +107,7 @@ class ImageStudio
             'allowed_hosts' => $allowedHosts,
             'model' => $settings['ai_model'],
             'has_token' => !empty($settings['ai_token']),
+            'mode' => $this->isGenerationsUrl($url) ? 'json-generations' : 'multipart-edits',
             'last_attempt' => $logs[0] ?? null,
         ];
     }
@@ -112,7 +117,8 @@ class ImageStudio
         $startedAt = hrtime(true);
         $settings = $this->settings();
         $preset = collect($this->presets())->firstWhere('id', $presetId);
-        $context = $this->baseContext($image, $presetId, $preset, $settings);
+        $requestMode = $this->isGenerationsUrl($settings['ai_url'] ?? '') ? 'json-generations' : 'multipart-edits';
+        $context = $this->baseContext($image, $presetId, $preset, $settings, $requestMode);
 
         if (!$preset) {
             return $this->fail(
@@ -160,27 +166,32 @@ class ImageStudio
             );
         }
 
-        $stream = fopen($image->path(), 'rb');
-        if (!is_resource($stream)) {
-            $this->recordLog($context + [
-                'state' => 'error',
-                'stage' => 'storage',
-                'http_status' => null,
-                'duration_ms' => $this->elapsedMs($startedAt),
-                'message' => 'خواندن فایل تصویر مرجع از حافظه موقت سرور ناموفق بود.',
-                'detail' => 'fopen failed for uploaded temp path.',
-            ]);
-            abort(500);
+        $stream = null;
+        if ($requestMode === 'multipart-edits') {
+            $stream = fopen($image->path(), 'rb');
+            if (!is_resource($stream)) {
+                $this->recordLog($context + [
+                    'state' => 'error',
+                    'stage' => 'storage',
+                    'http_status' => null,
+                    'duration_ms' => $this->elapsedMs($startedAt),
+                    'message' => 'خواندن فایل تصویر مرجع از حافظه موقت سرور ناموفق بود.',
+                    'detail' => 'fopen failed for uploaded temp path.',
+                ]);
+                abort(500);
+            }
         }
 
         try {
-            $httpResponse = $endpoint
-                ->attach('image', $stream, 'product.'.$image->extension())
-                ->post($settings['ai_url'], [
-                    'model' => $settings['ai_model'],
-                    'prompt' => $preset['prompt'],
-                    'size' => '1024x1024',
-                ])->throw();
+            $payloadData = [
+                'model' => $settings['ai_model'],
+                'prompt' => $preset['prompt'],
+                'size' => '1024x1024',
+            ];
+            $httpResponse = ($requestMode === 'json-generations'
+                ? $endpoint->asJson()->post($settings['ai_url'], $payloadData)
+                : $endpoint->attach('image', $stream, 'product.'.$image->extension())->post($settings['ai_url'], $payloadData)
+            )->throw();
         } catch (ConnectionException $error) {
             $reason = $this->sanitizeText($error->getMessage(), 350);
 
@@ -190,7 +201,7 @@ class ImageStudio
                 'connection',
                 'image',
                 'ارتباط با سرویس استودیو برقرار نشد: '.$reason,
-                "ConnectionException ({$this->elapsedMs($startedAt)}ms) | url={$context['url']} | model={$context['model']} | {$reason}"
+                "ConnectionException ({$this->elapsedMs($startedAt)}ms) | mode={$requestMode} | url={$context['url']} | model={$context['model']} | {$reason}"
             );
         } catch (RequestException $error) {
             $response = $error->response;
@@ -204,6 +215,7 @@ class ImageStudio
 
             $detailParts = array_filter([
                 "HTTP {$status}",
+                "mode={$requestMode}",
                 $contentType !== '' ? "Content-Type: {$contentType}" : null,
                 is_scalar($providerCode) && $providerCode !== '' ? "code: {$providerCode}" : null,
                 $providerMessage ? "provider_message: {$providerMessage}" : null,
@@ -228,7 +240,7 @@ class ImageStudio
                 'http_error',
                 'image',
                 'خطای درخواست HTTP در استودیو: '.$reason,
-                get_class($error).': '.$reason
+                get_class($error).": {$reason}"
             );
         } catch (\Throwable $error) {
             $reason = $this->sanitizeText($error->getMessage(), 350);
@@ -259,21 +271,55 @@ class ImageStudio
                 'response_format',
                 'image',
                 'پاسخ سرویس استودیو قالب JSON معتبر نداشت.',
-                "HTTP {$status} | Content-Type: ".($contentType ?: '(none)').' | body_bytes='.strlen($body).' | body='.$this->sanitizeExcerpt($body, 350),
+                "HTTP {$status} | mode={$requestMode} | Content-Type: ".($contentType ?: '(none)').' | body_bytes='.strlen($body).' | body='.$this->sanitizeExcerpt($body, 350),
                 $status
             );
         }
 
         $b64 = data_get($payload, 'data.0.b64_json');
-        if (!is_string($b64) || trim($b64) === '') {
+        $imageUrl = data_get($payload, 'data.0.url');
+        $sourceKind = 'b64_json';
+        $downloadedFrom = null;
+
+        if (is_string($b64) && trim($b64) !== '') {
+            if (strlen($b64) >= 24000000) {
+                return $this->fail(
+                    $context,
+                    $startedAt,
+                    'response_format',
+                    'image',
+                    'حجم دادهٔ تصویر بازگشتی از سرویس استودیو بیش از حد مجاز (۲۴ مگابایت base64) است.',
+                    "HTTP {$status} | b64_length=".strlen($b64),
+                    $status
+                );
+            }
+
+            $bytes = base64_decode($b64, true);
+            if ($bytes === false) {
+                $hasDataUri = str_starts_with($b64, 'data:image/');
+                $message = $hasDataUri
+                    ? 'خروجی b64_json دارای پیشوند Data URI (data:image/...) است و base64 خام نیست.'
+                    : 'مقدار data.0.b64_json کدگذاری base64 معتبر ندارد.';
+
+                return $this->fail(
+                    $context,
+                    $startedAt,
+                    'response_format',
+                    'image',
+                    $message,
+                    "HTTP {$status} | b64_length=".strlen($b64).' | prefix='.$this->sanitizeText(substr($b64, 0, 80), 80),
+                    $status
+                );
+            }
+        } elseif (is_string($imageUrl) && trim($imageUrl) !== '') {
+            $sourceKind = 'url';
+            [$bytes, $downloadedFrom] = $this->downloadImageUrl(trim($imageUrl), $context, $startedAt, $status);
+        } else {
             $keys = implode(', ', array_keys($payload)) ?: '(empty)';
             $providerError = $this->extractProviderError($payload);
-            $hasUrl = is_string(data_get($payload, 'data.0.url')) && data_get($payload, 'data.0.url') !== '';
-            $message = match (true) {
-                $providerError !== null => "سرویس استودیو در پاسخ HTTP {$status} خطا برگرداند: {$providerError}",
-                $hasUrl => 'سرویس استودیو به جای تصویر base64 (فیلد data.0.b64_json)، نشانی تصویر (data.0.url) برگرداند که پشتیبانی نمی‌شود.',
-                default => "فیلد data.0.b64_json در پاسخ سرویس استودیو یافت نشد (کلیدهای JSON: {$keys}).",
-            };
+            $message = $providerError !== null
+                ? "سرویس استودیو در پاسخ HTTP {$status} خطا برگرداند: {$providerError}"
+                : "فیلد data.0.b64_json یا data.0.url در پاسخ سرویس استودیو یافت نشد (کلیدهای JSON: {$keys}).";
 
             return $this->fail(
                 $context,
@@ -281,37 +327,7 @@ class ImageStudio
                 'response_format',
                 'image',
                 $message,
-                "HTTP {$status} | Content-Type: ".($contentType ?: '(none)')." | keys={$keys} | excerpt=".$this->sanitizeExcerpt($body, 350),
-                $status
-            );
-        }
-
-        if (strlen($b64) >= 24000000) {
-            return $this->fail(
-                $context,
-                $startedAt,
-                'response_format',
-                'image',
-                'حجم دادهٔ تصویر بازگشتی از سرویس استودیو بیش از حد مجاز (۲۴ مگابایت base64) است.',
-                "HTTP {$status} | b64_length=".strlen($b64),
-                $status
-            );
-        }
-
-        $bytes = base64_decode($b64, true);
-        if ($bytes === false) {
-            $hasDataUri = str_starts_with($b64, 'data:image/');
-            $message = $hasDataUri
-                ? 'خروجی b64_json دارای پیشوند Data URI (data:image/...) است و base64 خام نیست.'
-                : 'مقدار data.0.b64_json کدگذاری base64 معتبر ندارد.';
-
-            return $this->fail(
-                $context,
-                $startedAt,
-                'response_format',
-                'image',
-                $message,
-                "HTTP {$status} | b64_length=".strlen($b64).' | prefix='.$this->sanitizeText(substr($b64, 0, 80), 80),
+                "HTTP {$status} | mode={$requestMode} | Content-Type: ".($contentType ?: '(none)')." | keys={$keys} | excerpt=".$this->sanitizeExcerpt($body, 350),
                 $status
             );
         }
@@ -325,7 +341,7 @@ class ImageStudio
                 'response_format',
                 'image',
                 'خروجی تصویری قابل ذخیره دریافت نشد'.($mime ? " (نوع فایل تشخیص‌داده‌شده: {$mime})." : '.'),
-                "HTTP {$status} | decoded_bytes=".strlen($bytes).' | detected_mime='.($mime ?: 'empty').' | excerpt='.$this->sanitizeExcerpt($bytes, 200),
+                "HTTP {$status} | source={$sourceKind} | decoded_bytes=".strlen($bytes).' | detected_mime='.($mime ?: 'empty').' | excerpt='.$this->sanitizeExcerpt($bytes, 200),
                 $status
             );
         }
@@ -345,19 +361,180 @@ class ImageStudio
             abort(500);
         }
 
+        $sourceSummary = $downloadedFrom ? "url({$downloadedFrom})" : 'b64_json';
         $this->recordLog($context + [
             'state' => 'success',
             'stage' => 'success',
             'http_status' => $status,
             'duration_ms' => $this->elapsedMs($startedAt),
             'message' => 'تصویر با موفقیت تولید شد.',
-            'detail' => "HTTP {$status} | output={$path} ({$mime}, ".strlen($bytes).' bytes)',
+            'detail' => "HTTP {$status} | mode={$requestMode} | source={$sourceSummary} | output={$path} ({$mime}, ".strlen($bytes).' bytes)',
         ]);
 
         return $path;
     }
 
-    private function baseContext(UploadedFile $image, int $presetId, ?array $preset, array $settings): array
+    private function downloadImageUrl(string $url, array $context, int $startedAt, int $apiStatus): array
+    {
+        $currentUrl = $url;
+        for ($hop = 0; $hop <= 3; $hop++) {
+            $rejection = $this->unsafeDownloadReason($currentUrl);
+            if ($rejection !== null) {
+                $this->fail(
+                    $context,
+                    $startedAt,
+                    'download',
+                    'image',
+                    "نشانی تصویر خروجی (data.0.url) مجاز نیست: {$rejection}",
+                    "API HTTP {$apiStatus} | blocked_download_url={$this->safeUrl($currentUrl)} | reason={$rejection}",
+                    $apiStatus
+                );
+            }
+
+            try {
+                $response = Http::timeout(30)->connectTimeout(5)->withoutRedirecting()->get($currentUrl);
+            } catch (ConnectionException $error) {
+                $reason = $this->sanitizeText($error->getMessage(), 300);
+                $this->fail(
+                    $context,
+                    $startedAt,
+                    'download',
+                    'image',
+                    "دریافت تصویر از نشانی خروجی ناموفق بود: {$reason}",
+                    "API HTTP {$apiStatus} | download_url={$this->safeUrl($currentUrl)} | ConnectionException: {$reason}",
+                    $apiStatus
+                );
+            }
+
+            $downloadStatus = $response->status();
+            if (in_array($downloadStatus, [301, 302, 303, 307, 308], true)) {
+                $location = trim((string) $response->header('Location'));
+                if ($location === '') {
+                    $this->fail(
+                        $context,
+                        $startedAt,
+                        'download',
+                        'image',
+                        "نشانی تصویر خروجی پاسخ تغییر مسیر (HTTP {$downloadStatus}) بدون مقصد داد.",
+                        "API HTTP {$apiStatus} | download_url={$this->safeUrl($currentUrl)} | HTTP {$downloadStatus} empty Location",
+                        $downloadStatus
+                    );
+                }
+                if (!preg_match('/^https?:\/\//i', $location)) {
+                    $parts = parse_url($currentUrl);
+                    $origin = ($parts['scheme'] ?? 'https').'://'.($parts['host'] ?? '').(isset($parts['port']) ? ':'.$parts['port'] : '');
+                    $location = str_starts_with($location, '/') ? $origin.$location : $origin.'/'.$location;
+                }
+                $currentUrl = $location;
+                continue;
+            }
+
+            if ($response->failed()) {
+                $this->fail(
+                    $context,
+                    $startedAt,
+                    'download',
+                    'image',
+                    "دریافت فایل تصویر از نشانی خروجی ناموفق بود (HTTP {$downloadStatus}).",
+                    "API HTTP {$apiStatus} | download_url={$this->safeUrl($currentUrl)} | download HTTP {$downloadStatus} | body=".$this->sanitizeExcerpt($response->body(), 250),
+                    $downloadStatus
+                );
+            }
+
+            $bytes = $response->body();
+            if (strlen($bytes) > self::MAX_DOWNLOAD_BYTES) {
+                $this->fail(
+                    $context,
+                    $startedAt,
+                    'download',
+                    'image',
+                    'حجم فایل تصویر دریافت‌شده از نشانی خروجی بیش از حد مجاز است.',
+                    "download_url={$this->safeUrl($currentUrl)} | bytes=".strlen($bytes),
+                    $downloadStatus
+                );
+            }
+
+            return [$bytes, $this->safeUrl($currentUrl)];
+        }
+
+        $this->fail(
+            $context,
+            $startedAt,
+            'download',
+            'image',
+            'تعداد تغییر مسیرهای (redirect) نشانی تصویر خروجی بیش از حد مجاز بود.',
+            "API HTTP {$apiStatus} | last_download_url={$this->safeUrl($currentUrl)}",
+            $apiStatus
+        );
+    }
+
+    private function unsafeDownloadReason(string $url): ?string
+    {
+        $parts = parse_url($url);
+        if (!is_array($parts) || strtolower((string) ($parts['scheme'] ?? '')) !== 'https') {
+            return 'نشانی باید با https:// آغاز شود.';
+        }
+        if (isset($parts['user']) || isset($parts['pass'])) {
+            return 'نشانی نباید شامل اطلاعات کاربری باشد.';
+        }
+        if (isset($parts['port']) && (int) $parts['port'] !== 443) {
+            return 'فقط پورت استاندارد HTTPS مجاز است.';
+        }
+        $host = strtolower(trim((string) ($parts['host'] ?? ''), '[]'));
+        if ($host === '' || $host === 'localhost' || str_ends_with($host, '.local') || str_ends_with($host, '.internal')) {
+            return 'میزبان محلی یا داخلی مجاز نیست.';
+        }
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            return filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)
+                ? null
+                : 'آی‌پی خصوصی یا رزروشده مجاز نیست.';
+        }
+        if (app()->runningUnitTests()) {
+            return null;
+        }
+        $ips = $this->resolveHostIps($host);
+        if ($ips === []) {
+            return 'نام دامنه به آی‌پی معتبر ترجمه نشد.';
+        }
+        foreach ($ips as $ip) {
+            if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                return 'آی‌پی مقصد در محدودهٔ خصوصی یا رزروشده است.';
+            }
+        }
+
+        return null;
+    }
+
+    private function resolveHostIps(string $host): array
+    {
+        $ips = [];
+        $records = @dns_get_record($host, DNS_A | DNS_AAAA);
+        if (is_array($records)) {
+            foreach ($records as $record) {
+                $ip = $record['ip'] ?? $record['ipv6'] ?? null;
+                if (is_string($ip) && $ip !== '') {
+                    $ips[] = $ip;
+                }
+            }
+        }
+        if ($ips === []) {
+            $v4 = @gethostbynamel($host);
+            if (is_array($v4)) {
+                $ips = $v4;
+            }
+        }
+
+        return $ips;
+    }
+
+    private function isGenerationsUrl(string $url): bool
+    {
+        $path = strtolower(rtrim((string) parse_url(trim($url), PHP_URL_PATH), '/'));
+
+        return str_ends_with($path, '/images/generations');
+    }
+
+    private function baseContext(UploadedFile $image, int $presetId, ?array $preset, array $settings, string $requestMode): array
     {
         $size = $image->getSize();
 
@@ -366,6 +543,7 @@ class ImageStudio
             'preset_title' => $preset['title'] ?? null,
             'model' => $settings['ai_model'] ?? null,
             'url' => $this->safeUrl($settings['ai_url'] ?? ''),
+            'mode' => $requestMode,
             'has_token' => !empty($settings['ai_token']),
             'source_mime' => $image->getMimeType(),
             'source_ext' => $image->extension(),

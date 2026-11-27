@@ -137,7 +137,7 @@ class Admin extends Controller
                 'rate_url' => ['آدرس API نرخ طلای ۱۸ عیار', 'nullable|url:https|max:800'], 'rate_path' => ['مسیر JSON مثل data.price', 'required_with:rate_url|nullable|string|max:160'],
                 'rate_unit' => ['واحد پاسخ', 'required|in:rial,toman', 'unit'],
                 'rate_token' => ['توکن نرخ (خالی = حفظ کلید)', 'nullable|string|max:1000', 'password'],
-                'ai_url' => ['آدرس API سازگار با OpenAI Images Edits', 'nullable|url:https|max:800'],
+                'ai_url' => ['آدرس API سازگار با OpenAI Images (Edits یا Generations)', 'nullable|url:https|max:800'],
                 'ai_model' => ['مدل تولید تصویر', 'nullable|string|max:100'],
                 'ai_token' => ['توکن استودیو (خالی = حفظ کلید)', 'nullable|string|max:1000', 'password'],
                 'brand' => ['نام فروشگاه', 'nullable|string|max:100'], 'footer' => ['متن انتهای سایت', 'nullable|string|max:350', 'richtext'],
