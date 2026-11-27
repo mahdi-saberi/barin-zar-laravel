@@ -331,4 +331,70 @@ class AdminStoreTest extends TestCase
         }
         $this->assertSame([], Storage::disk('public')->files('catalog'));
     }
+
+    public function test_studio_diagnostic_logs_record_specific_failures_without_exposing_secrets(): void
+    {
+        $this->signIn();
+        Storage::fake('local');
+        $reference = new UploadedFile(public_path('assets/p1.webp'), 'reference.webp', 'image/webp', null, true);
+
+        Entry::putData('settings', 'store', ['ai_url' => 'https://unlisted.example.test/v1/images/edits']);
+        $this->postJson('/admin/image', ['image' => $reference, 'preset' => 1])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('ai_url');
+
+        Entry::putData('settings', 'store', [
+            'ai_url' => 'https://api.openai.com/v1/images/edits',
+            'ai_token' => 'not-valid-ciphertext',
+        ]);
+        $this->postJson('/admin/image', ['image' => $reference, 'preset' => 1])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('image');
+
+        $secret = 'sk-secret-studio-token-9999';
+        $url = 'https://api.openai.com/v1/images/edits';
+        Entry::putData('settings', 'store', [
+            'ai_url' => $url,
+            'ai_model' => 'gpt-image-1',
+            'ai_token' => Crypt::encryptString($secret),
+        ]);
+        Http::preventStrayRequests()->fake([
+            $url => Http::sequence()
+                ->push(['error' => ['message' => 'Model access denied for sk-secret-studio-token-9999', 'code' => 'model_not_found']], 400)
+                ->push(['data' => [['url' => 'https://cdn.example.test/out.png']]], 200)
+                ->pushFailedConnection('cURL error 28: Operation timed out'),
+        ]);
+
+        $this->postJson('/admin/image', ['image' => $reference, 'preset' => 1])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.image.0', fn (string $msg) => str_contains($msg, '400') && str_contains($msg, 'Model access denied'));
+
+        $this->postJson('/admin/image', ['image' => $reference, 'preset' => 1])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.image.0', fn (string $msg) => str_contains($msg, 'data.0.url'));
+
+        $this->postJson('/admin/image', ['image' => $reference, 'preset' => 1])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.image.0', fn (string $msg) => str_contains($msg, 'timed out'));
+
+        $logs = $this->getJson('/admin/studio/logs')->assertOk()->json('logs');
+        $this->assertCount(5, $logs);
+        $this->assertSame(['connection', 'response_format', 'http_error', 'decrypt', 'config'], array_column($logs, 'stage'));
+        $this->assertSame(400, $logs[2]['http_status']);
+        $this->assertStringContainsString('model_not_found', $logs[2]['detail']);
+        $this->assertStringNotContainsString($secret, json_encode($logs));
+
+        $this->get('/admin?tab=studio')
+            ->assertOk()
+            ->assertSee('لاگ آزمایش و خطاهای استودیو')
+            ->assertSee('model_not_found')
+            ->assertDontSee($secret);
+
+        $this->postJson('/admin/studio/logs/clear')->assertOk()->assertJsonPath('ok', true);
+        $this->assertSame([], $this->getJson('/admin/studio/logs')->assertOk()->json('logs'));
+
+        $this->actingAs(User::factory()->create(['role' => 'orders']));
+        $this->getJson('/admin/studio/logs')->assertForbidden();
+        $this->postJson('/admin/studio/logs/clear')->assertForbidden();
+    }
 }

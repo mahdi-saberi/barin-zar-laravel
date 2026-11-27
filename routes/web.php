@@ -68,6 +68,8 @@ Route::prefix('admin')->middleware('auth')->group(function () {
     Route::post('/image', [Admin::class, 'generate'])->name('admin.images.generate');
     Route::get('/image/{file}', [Admin::class, 'studioImage'])->name('admin.images.show');
     Route::post('/image/{file}/publish', [Admin::class, 'publishImage'])->name('admin.images.publish');
+    Route::get('/studio/logs', [Admin::class, 'studioLogs'])->name('admin.studio.logs');
+    Route::post('/studio/logs/clear', [Admin::class, 'clearStudioLogs'])->name('admin.studio.logs.clear');
     Route::post('/upload', [Admin::class, 'upload'])->name('admin.upload');
     Route::get('/media', [Admin::class, 'media'])->name('admin.media');
     Route::post('/orders/{id}', [Admin::class, 'status'])->name('admin.orders.status');

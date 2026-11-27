@@ -157,7 +157,10 @@ class Admin extends Controller
             'finance' => $this->finance($request),
             'customers', 'users' => $this->directory($request, $tab === 'customers'),
             'gateways' => ['gatewayDefinitions' => Gateways::DEFINITIONS, 'gatewayRecords' => PaymentGateway::all()->keyBy('provider')],
-            'studio' => [],
+            'studio' => [
+                'studioLogs' => $this->studio->logs(),
+                'studioStatus' => $this->studio->readiness(),
+            ],
             'settings' => [
                 'kind' => 'settings',
                 'fields' => $this->fields()['settings'],
@@ -166,6 +169,7 @@ class Admin extends Controller
                 'rate' => Entry::getData('rate', 'latest'),
                 'rateStatus' => Entry::getData('rate', 'scheduled'),
                 'manualRateStatus' => Entry::getData('rate', 'manual'),
+                'studioStatus' => $this->studio->readiness(),
             ],
             default => $this->entryPanel($request, $tab),
         };
@@ -537,7 +541,10 @@ class Admin extends Controller
     public function generate(Request $request)
     {
         $this->authorizeAdmin('content');
-        $data = $request->validate(['preset' => 'required|integer', 'image' => ImageStudio::IMAGE_RULE]);
+        $data = $request->validate(
+            ['preset' => 'required|integer', 'image' => ImageStudio::IMAGE_RULE],
+            ImageStudio::IMAGE_MESSAGES + ['preset.required' => 'یک طرح عکاسی انتخاب کنید.', 'preset.integer' => 'شناسهٔ طرح عکاسی معتبر نیست.']
+        );
         $path = $this->studio->generate($data['image'], (int) $data['preset']);
         if ($request->expectsJson()) {
             $file = basename($path);
@@ -549,6 +556,26 @@ class Admin extends Controller
         }
 
         return back()->with('generated', $path);
+    }
+
+    public function studioLogs()
+    {
+        $this->authorizeAdmin('content');
+
+        return response()->json([
+            'logs' => $this->studio->logs(),
+            'status' => $this->studio->readiness(),
+        ]);
+    }
+
+    public function clearStudioLogs(Request $request)
+    {
+        $this->authorizeAdmin('content');
+        $this->studio->clearLogs();
+
+        return $request->expectsJson()
+            ? response()->json(['ok' => true])
+            : back()->with('notice', 'لاگ استودیوی تصویر پاک شد.');
     }
 
     public function studioImage(string $file)
@@ -595,10 +622,9 @@ class Admin extends Controller
             'kind' => 'sometimes|required|in:image,video',
             $field => $video ? Media::VIDEO_RULE : ImageStudio::IMAGE_RULE,
             'preset' => $video ? 'prohibited' : 'sometimes|required|integer',
-        ], [
+        ], ImageStudio::IMAGE_MESSAGES + [
             'file.mimetypes' => 'ویدئو باید MP4 یا WebM باشد.',
             'file.max' => 'حجم ویدئو باید حداکثر ۳۲ مگابایت باشد.',
-            'image.max' => 'حجم عکس باید حداکثر ۸ مگابایت باشد.',
         ]);
         $generated = isset($data['preset']);
         $file = $data[$field];

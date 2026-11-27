@@ -14,9 +14,19 @@ class Integrations
     {
         $url = $settings[$name.'_url'] ?? '';
         $parts = parse_url($url);
-        if (($parts['scheme'] ?? '') !== 'https' || !in_array(strtolower($parts['host'] ?? ''), config('barin.integrations'), true)
-            || isset($parts['user']) || isset($parts['port']) || isset($parts['pass'])) {
-            throw ValidationException::withMessages([$name.'_url' => 'نشانی HTTPS و میزبان مجاز لازم است.']);
+        if (!is_array($parts) || strtolower($parts['scheme'] ?? '') !== 'https') {
+            throw ValidationException::withMessages([$name.'_url' => 'نشانی سرویس باید با https:// آغاز شود.']);
+        }
+        if (isset($parts['user']) || isset($parts['port']) || isset($parts['pass'])) {
+            throw ValidationException::withMessages([$name.'_url' => 'نشانی سرویس نباید شامل پورت یا نام کاربری در آدرس باشد.']);
+        }
+        $host = strtolower($parts['host'] ?? '');
+        $allowed = config('barin.integrations');
+        if ($host === '' || !in_array($host, $allowed, true)) {
+            $allowedText = $allowed ? implode(', ', $allowed) : 'تعریف‌نشده';
+            throw ValidationException::withMessages([
+                $name.'_url' => "میزبان «{$host}» در فهرست میزبان‌های مجاز (BARIN_INTEGRATION_HOSTS: {$allowedText}) نیست.",
+            ]);
         }
         $request = Http::acceptJson()->timeout($name === 'ai' ? 120 : 8)->connectTimeout(5)->withoutRedirecting();
         return empty($settings[$name.'_token']) ? $request : $request->withToken(Crypt::decryptString($settings[$name.'_token']));

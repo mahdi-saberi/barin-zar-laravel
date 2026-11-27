@@ -133,6 +133,9 @@ html:has(.media-picker:modal) { overflow: hidden; }
 .media-studio-result { display: flex; align-items: center; gap: 12px; margin-block-start: 13px; padding: 8px; border: 1px solid #ddc59a; border-radius: 10px; background: #fbf5ea; }
 .media-studio-result img { width: clamp(65px, 20vw, 172px); border-radius: 6px; aspect-ratio: 1; }
 .media-studio-result > div { display: grid; justify-items: start; gap: 5px; }
+.media-studio-log { display: grid; gap: 4px; margin-block-start: 12px; padding: 10px 12px; border: 1px solid #d5e3d8; border-radius: 10px; background: #f3faf5; color: #215339; font-size: 13px; overflow-wrap: anywhere; }
+.media-studio-log.is-error { border-color: #e9c4be; background: #fcf0ee; color: #8b2b24; }
+.media-studio-log small { color: var(--admin-muted); font-size: 12px; }
 .media-picker-alt { margin-block-start: 10px; }
 
 .admin-rich-field { display: grid; gap: 6px; min-width: 0; }

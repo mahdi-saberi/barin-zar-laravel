@@ -14,7 +14,7 @@ final class PersianFormat
         return CalendarUtils::convertNumbers(number_format($value, 0, '.', '٬'));
     }
 
-    public static function dateTime(?string $timestamp): ?string
+    public static function dateTime(?string $timestamp, string $format = 'Y/m/d H:i'): ?string
     {
         if (! $timestamp) {
             return null;
@@ -27,6 +27,6 @@ final class PersianFormat
             return null;
         }
 
-        return CalendarUtils::convertNumbers(Jalalian::fromDateTime($local)->format('Y/m/d H:i'));
+        return CalendarUtils::convertNumbers(Jalalian::fromDateTime($local)->format($format));
     }
 }

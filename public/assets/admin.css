@@ -172,6 +172,31 @@ ul.admin-message { padding-inline-start: 32px; }
 .admin-generated { display: flex; align-items: start; gap: 14px; flex-wrap: wrap; }
 .admin-generated img { width: min(100%, 300px); height: auto; border-radius: 10px; }
 .admin-generated .admin-actions { margin-block-start: 10px; }
+.admin-studio-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px 14px; margin: 0; }
+.admin-studio-meta div { display: grid; gap: 3px; padding: 9px 11px; border: 1px solid #ece8df; border-radius: 10px; background: #faf9f6; }
+.admin-studio-meta dt { color: var(--admin-muted); font-size: 12px; }
+.admin-studio-meta dd { margin: 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.admin-studio-log-list { display: grid; gap: 10px; }
+.admin-studio-log-item { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid var(--admin-border); border-inline-start-width: 4px; border-radius: 12px; background: #fcfcfa; }
+.admin-studio-log-item.is-error { border-inline-start-color: #b84942; background: #fdf7f6; }
+.admin-studio-log-item.is-success { border-inline-start-color: #2f7d4f; background: #f4faf6; }
+.admin-studio-log-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.admin-studio-log-head time { margin-inline-start: auto; font-size: 12px; }
+.admin-studio-log-message { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.admin-studio-log-meta { margin: 0; overflow-wrap: anywhere; }
+.admin-studio-log-detail {
+    margin: 2px 0 0;
+    padding: 8px 10px;
+    border: 1px solid #e3ded4;
+    border-radius: 8px;
+    background: #fff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    text-align: left;
+}
 
 .admin-guest { display: grid; min-height: 100dvh; place-items: center; padding: 16px; background: radial-gradient(ellipse at 100% 0%, #e8dfcb, transparent 60%), var(--admin-bg); }
 .admin-login { width: min(100%, 430px); margin-block: 25px; }

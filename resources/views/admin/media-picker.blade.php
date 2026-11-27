@@ -61,6 +61,7 @@
                     <button class="admin-button" type="button" data-studio-generate>✦ تولید تصویر</button>
                 </div>
             </div>
+            <div class="media-studio-log" data-studio-log role="status" aria-live="polite" hidden></div>
             <div class="media-studio-result" data-studio-result hidden>
                 <img data-studio-preview alt="تصویر تولیدشده در استودیو">
                 <div><span>خروجی استودیو</span><a class="admin-button admin-button-small" data-studio-download download>دریافت تصویر</a></div>

@@ -105,12 +105,114 @@
         if (tab === 'library') loadLibrary(1);
     }
 
+    function showStudioLog(message = '', error = false) {
+        const box = get('studio-log');
+        if (!box) return;
+        box.hidden = !message;
+        box.classList.toggle('is-error', error);
+        box.replaceChildren();
+        if (!message) return;
+        const text = document.createElement('strong');
+        text.textContent = message;
+        box.append(text);
+        if (error) {
+            const note = document.createElement('small');
+            note.textContent = 'جزئیات کامل‌تر (کد وضعیت، زمان و پاسخ سرویس) در لاگ استودیو و لاگ سرور ثبت شد.';
+            box.append(note);
+        }
+    }
+
+    async function refreshStudioLogs() {
+        const container = document.querySelector('[data-studio-logs]');
+        if (!container?.dataset.studioLogsUrl) return;
+        try {
+            const response = await fetch(container.dataset.studioLogsUrl, { headers: { Accept: 'application/json' } });
+            if (!response.ok) return;
+            const data = await response.json();
+            const list = container.querySelector('[data-studio-log-items]');
+            const clearForm = container.querySelector('[data-studio-logs-clear]');
+            const logs = Array.isArray(data?.logs) ? data.logs : [];
+            if (clearForm) clearForm.hidden = logs.length === 0;
+            if (!list) return;
+            if (!logs.length) {
+                const empty = document.createElement('p');
+                empty.className = 'admin-muted';
+                empty.textContent = 'هنوز تلاشی در استودیو ثبت نشده است. برای آزمایش، روی «باز کردن کتابخانه» بزنید و در تب «✦ استودیوی هوش مصنوعی» تصویر تولید کنید.';
+                list.replaceChildren(empty);
+                return;
+            }
+            list.replaceChildren(...logs.map(item => {
+                const ok = item.state === 'success';
+                const article = document.createElement('article');
+                article.className = 'admin-studio-log-item ' + (ok ? 'is-success' : 'is-error');
+
+                const head = document.createElement('div');
+                head.className = 'admin-studio-log-head';
+                const stateBadge = document.createElement('span');
+                stateBadge.className = 'admin-badge ' + (ok ? 'badge-success' : 'badge-danger');
+                stateBadge.textContent = ok ? 'موفق' : 'خطا';
+                const stageBadge = document.createElement('span');
+                stageBadge.className = 'admin-badge badge-neutral';
+                stageBadge.textContent = item.stage_label || item.stage || '-';
+                head.append(stateBadge, stageBadge);
+                if (item.http_status) {
+                    const httpBadge = document.createElement('span');
+                    httpBadge.className = 'admin-badge badge-warning';
+                    httpBadge.dir = 'ltr';
+                    httpBadge.textContent = 'HTTP ' + item.http_status;
+                    head.append(httpBadge);
+                }
+                if (typeof item.duration_ms === 'number') {
+                    const dur = document.createElement('span');
+                    dur.className = 'admin-code';
+                    dur.dir = 'ltr';
+                    dur.textContent = item.duration_ms + ' ms';
+                    head.append(dur);
+                }
+                const time = document.createElement('time');
+                time.className = 'admin-muted admin-numeric';
+                time.textContent = item.attempted_at_label || item.attempted_at || '';
+                head.append(time);
+
+                const msg = document.createElement('p');
+                msg.className = 'admin-studio-log-message';
+                msg.textContent = item.message || '';
+
+                const meta = document.createElement('p');
+                meta.className = 'admin-code admin-studio-log-meta';
+                const parts = [
+                    'مدل: ' + (item.model || '-'),
+                    'نشانی: ' + (item.url || '-'),
+                ];
+                if (item.preset_id) parts.push('طرح: ' + (item.preset_title || '#' + item.preset_id));
+                if (item.source_mime || item.source_bytes) {
+                    const kb = item.source_bytes ? Math.round(item.source_bytes / 1024) + ' KB' : '?';
+                    parts.push('فایل مرجع: ' + (item.source_mime || '?') + ' (' + kb + ')');
+                }
+                meta.textContent = parts.join(' · ');
+
+                article.append(head, msg, meta);
+                if (item.detail) {
+                    const detail = document.createElement('pre');
+                    detail.className = 'admin-studio-log-detail';
+                    detail.dir = 'ltr';
+                    detail.textContent = item.detail;
+                    article.append(detail);
+                }
+                return article;
+            }));
+        } catch {
+            // Keep existing server-rendered logs if refresh fails.
+        }
+    }
+
     function setReference(source) {
         if (referenceUrl) URL.revokeObjectURL(referenceUrl);
         referenceUrl = source?.file ? URL.createObjectURL(source.file) : '';
         reference = source;
         studioResult = null;
         get('studio-result').hidden = true;
+        showStudioLog();
         const photo = get('reference-preview');
         if (source) photo.src = referenceUrl || source.path;
         else photo.removeAttribute('src');
@@ -215,10 +317,21 @@
     }
 
     async function readJson(response, fallback) {
-        const data = await response.json().catch(() => null);
+        const text = await response.text().catch(() => '');
+        let data = null;
+        try {
+            data = text ? JSON.parse(text) : null;
+        } catch {
+            data = null;
+        }
         if (response.ok && data) return data;
         const detail = data?.errors && Object.values(data.errors)[0]?.[0];
-        throw new Error(detail || (response.status === 413 ? 'حجم فایل بیشتر از حد مجاز سرور است.' : fallback));
+        if (detail) throw new Error(detail);
+        if (response.status === 413) throw new Error('حجم فایل بیشتر از حد مجاز سرور است (کد ۴۱۳).');
+        if (response.status === 419) throw new Error('نشست منقضی شده است (کد ۴۱۹). صفحه را نوسازی کنید.');
+        const serverMessage = typeof data?.message === 'string' && data.message.trim() ? data.message.trim() : '';
+        const suffix = serverMessage ? `${serverMessage} — کد ${response.status}` : `کد HTTP ${response.status}`;
+        throw new Error(`${fallback} (${suffix})`);
     }
 
     async function loadLibrary(page) {
@@ -295,12 +408,13 @@
     async function generate() {
         if (busy || !reference) return;
         setBusy(true);
+        showStudioLog();
         status('استودیو در حال تولید تصویر است…');
         try {
             let file = reference.file;
             if (!file) {
                 const response = await fetch(reference.path);
-                if (!response.ok) throw new Error('عکس مرجع در دسترس نیست.');
+                if (!response.ok) throw new Error('عکس مرجع در دسترس نیست (کد HTTP ' + response.status + ').');
                 const blob = await response.blob();
                 file = new File([blob], titleOf(reference), { type: blob.type });
             }
@@ -309,10 +423,16 @@
             get('studio-download').href = studioResult.path;
             get('studio-result').hidden = false;
             status('تصویر آماده است.');
+            showStudioLog('تصویر با موفقیت تولید شد.');
         } catch (error) {
-            status(error.message, true);
+            const message = error instanceof TypeError
+                ? 'خطای شبکه یا قطع ارتباط با سرور برنامه (' + error.message + ').'
+                : error.message;
+            status(message, true);
+            showStudioLog(message, true);
         } finally {
             setBusy(false);
+            refreshStudioLogs();
         }
     }
 

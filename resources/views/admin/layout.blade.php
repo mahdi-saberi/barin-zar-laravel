@@ -7,7 +7,7 @@
     <title>{{ $heading }} | مدیریت برین‌زر</title>
     <link rel="stylesheet" href="{{ asset('assets/style.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/modern.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/admin.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/admin.css') }}?v={{ filemtime(public_path('assets/admin.css')) }}">
     <link rel="stylesheet" href="{{ asset('assets/rich-content.css') }}">
     @php($hasEditor = !empty($formMode) && $tab !== 'seo')
     @if($hasEditor)
