@@ -166,97 +166,159 @@ class ImageStudio
             );
         }
 
-        $stream = null;
-        if ($requestMode === 'multipart-edits') {
-            $stream = fopen($image->path(), 'rb');
-            if (!is_resource($stream)) {
+        $payloadData = [
+            'model' => $settings['ai_model'],
+            'prompt' => $preset['prompt'],
+            'size' => '1024x1024',
+        ];
+        $currentUrl = trim((string) $settings['ai_url']);
+        $redirectTrail = [];
+        $httpResponse = null;
+
+        for ($hop = 0; $hop <= 2; $hop++) {
+            $requestMode = $this->isGenerationsUrl($currentUrl) ? 'json-generations' : 'multipart-edits';
+            $context['mode'] = $requestMode;
+            $stream = null;
+
+            if ($requestMode === 'multipart-edits') {
+                $stream = fopen($image->path(), 'rb');
+                if (!is_resource($stream)) {
+                    $this->recordLog($context + [
+                        'state' => 'error',
+                        'stage' => 'storage',
+                        'http_status' => null,
+                        'duration_ms' => $this->elapsedMs($startedAt),
+                        'message' => 'خواندن فایل تصویر مرجع از حافظه موقت سرور ناموفق بود.',
+                        'detail' => 'fopen failed for uploaded temp path.',
+                    ]);
+                    abort(500);
+                }
+            }
+
+            try {
+                $client = $hop === 0 ? $endpoint : $this->integrations->endpoint(['ai_url' => $currentUrl] + $settings, 'ai');
+                $httpResponse = ($requestMode === 'json-generations'
+                    ? $client->asJson()->post($currentUrl, $payloadData)
+                    : $client->attach('image', $stream, 'product.'.$image->extension())->post($currentUrl, $payloadData)
+                );
+            } catch (ConnectionException $error) {
+                $reason = $this->sanitizeText($error->getMessage(), 350);
+
+                return $this->fail(
+                    $context,
+                    $startedAt,
+                    'connection',
+                    'image',
+                    'ارتباط با سرویس استودیو برقرار نشد: '.$reason,
+                    "ConnectionException ({$this->elapsedMs($startedAt)}ms) | mode={$requestMode} | url={$this->safeUrl($currentUrl)} | model={$context['model']} | {$reason}"
+                );
+            } catch (HttpClientException $error) {
+                $reason = $this->sanitizeText($error->getMessage(), 350);
+
+                return $this->fail(
+                    $context,
+                    $startedAt,
+                    'http_error',
+                    'image',
+                    'خطای درخواست HTTP در استودیو: '.$reason,
+                    get_class($error).": {$reason}"
+                );
+            } catch (\Throwable $error) {
+                $reason = $this->sanitizeText($error->getMessage(), 350);
                 $this->recordLog($context + [
                     'state' => 'error',
-                    'stage' => 'storage',
+                    'stage' => 'unexpected',
                     'http_status' => null,
                     'duration_ms' => $this->elapsedMs($startedAt),
-                    'message' => 'خواندن فایل تصویر مرجع از حافظه موقت سرور ناموفق بود.',
-                    'detail' => 'fopen failed for uploaded temp path.',
+                    'message' => 'خطای غیرمنتظره در ارسال درخواست استودیو: '.$reason,
+                    'detail' => get_class($error).': '.$reason,
                 ]);
-                abort(500);
+                throw $error;
+            } finally {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
             }
-        }
 
-        try {
-            $payloadData = [
-                'model' => $settings['ai_model'],
-                'prompt' => $preset['prompt'],
-                'size' => '1024x1024',
-            ];
-            $httpResponse = ($requestMode === 'json-generations'
-                ? $endpoint->asJson()->post($settings['ai_url'], $payloadData)
-                : $endpoint->attach('image', $stream, 'product.'.$image->extension())->post($settings['ai_url'], $payloadData)
-            )->throw();
-        } catch (ConnectionException $error) {
-            $reason = $this->sanitizeText($error->getMessage(), 350);
+            $hopStatus = $httpResponse->status();
+            if ($hopStatus >= 300 && $hopStatus < 400) {
+                $location = trim((string) $httpResponse->header('Location'));
+                if ($location !== '' && !preg_match('/^https?:\/\//i', $location)) {
+                    $location = $this->resolveRelativeUrl($currentUrl, $location);
+                }
+                $safeLocation = $location !== '' ? $this->safeUrl($location) : '(none)';
 
-            return $this->fail(
-                $context,
-                $startedAt,
-                'connection',
-                'image',
-                'ارتباط با سرویس استودیو برقرار نشد: '.$reason,
-                "ConnectionException ({$this->elapsedMs($startedAt)}ms) | mode={$requestMode} | url={$context['url']} | model={$context['model']} | {$reason}"
-            );
-        } catch (RequestException $error) {
-            $response = $error->response;
-            $status = $response->status();
-            $contentType = (string) ($response->header('Content-Type') ?? '');
-            $json = $response->json();
-            $providerCode = is_array($json) ? ($json['error']['code'] ?? $json['error']['type'] ?? $json['code'] ?? null) : null;
-            $providerMessage = $this->extractProviderError($json);
-            $excerpt = $this->sanitizeExcerpt($response->body(), 400);
-            $hint = $providerMessage ?: ($excerpt ?: 'بدنهٔ پاسخ خالی است');
+                if (in_array($hopStatus, [307, 308], true) && $location !== '' && $hop < 2) {
+                    try {
+                        $this->integrations->validateUrl($location, 'ai_url');
+                    } catch (ValidationException $error) {
+                        $reason = (string) (collect($error->errors())->flatten()->first() ?: 'نشانی مقصد معتبر نیست.');
 
-            $detailParts = array_filter([
-                "HTTP {$status}",
-                "mode={$requestMode}",
-                $contentType !== '' ? "Content-Type: {$contentType}" : null,
-                is_scalar($providerCode) && $providerCode !== '' ? "code: {$providerCode}" : null,
-                $providerMessage ? "provider_message: {$providerMessage}" : null,
-                $excerpt !== '' && $excerpt !== $providerMessage ? "body: {$excerpt}" : null,
-            ]);
+                        return $this->fail(
+                            $context,
+                            $startedAt,
+                            'http_error',
+                            'image',
+                            "سرویس استودیو تغییر مسیر HTTP {$hopStatus} به «{$safeLocation}» داد: {$reason}",
+                            "HTTP {$hopStatus} | mode={$requestMode} | location={$safeLocation} | {$reason}",
+                            $hopStatus
+                        );
+                    }
+                    $redirectTrail[] = "{$this->safeUrl($currentUrl)} --({$hopStatus})--> {$safeLocation}";
+                    $currentUrl = $location;
+                    continue;
+                }
 
-            return $this->fail(
-                $context,
-                $startedAt,
-                'http_error',
-                'image',
-                "سرویس استودیو خطای HTTP {$status} برگرداند: {$hint}",
-                implode(' | ', $detailParts),
-                $status
-            );
-        } catch (HttpClientException $error) {
-            $reason = $this->sanitizeText($error->getMessage(), 350);
+                $message = $location !== ''
+                    ? "سرویس استودیو پاسخ تغییر مسیر HTTP {$hopStatus} به نشانی «{$safeLocation}» داد (نشانی تنظیمات را بررسی کنید)."
+                    : "سرویس استودیو پاسخ تغییر مسیر HTTP {$hopStatus} بدون هدر Location برگرداند.";
 
-            return $this->fail(
-                $context,
-                $startedAt,
-                'http_error',
-                'image',
-                'خطای درخواست HTTP در استودیو: '.$reason,
-                get_class($error).": {$reason}"
-            );
-        } catch (\Throwable $error) {
-            $reason = $this->sanitizeText($error->getMessage(), 350);
-            $this->recordLog($context + [
-                'state' => 'error',
-                'stage' => 'unexpected',
-                'http_status' => null,
-                'duration_ms' => $this->elapsedMs($startedAt),
-                'message' => 'خطای غیرمنتظره در ارسال درخواست استودیو: '.$reason,
-                'detail' => get_class($error).': '.$reason,
-            ]);
-            throw $error;
-        } finally {
-            if (is_resource($stream)) {
-                fclose($stream);
+                return $this->fail(
+                    $context,
+                    $startedAt,
+                    'http_error',
+                    'image',
+                    $message,
+                    "HTTP {$hopStatus} | mode={$requestMode} | location={$safeLocation}"
+                        .($redirectTrail ? ' | redirects='.implode(', ', $redirectTrail) : ''),
+                    $hopStatus
+                );
             }
+
+            try {
+                $httpResponse->throw();
+            } catch (RequestException $error) {
+                $response = $error->response;
+                $status = $response->status();
+                $contentType = (string) ($response->header('Content-Type') ?? '');
+                $json = $response->json();
+                $providerCode = is_array($json) ? ($json['error']['code'] ?? $json['error']['type'] ?? $json['code'] ?? null) : null;
+                $providerMessage = $this->extractProviderError($json);
+                $excerpt = $this->sanitizeExcerpt($response->body(), 400);
+                $hint = $providerMessage ?: ($excerpt ?: 'بدنهٔ پاسخ خالی است');
+
+                $detailParts = array_filter([
+                    "HTTP {$status}",
+                    "mode={$requestMode}",
+                    $contentType !== '' ? "Content-Type: {$contentType}" : null,
+                    is_scalar($providerCode) && $providerCode !== '' ? "code: {$providerCode}" : null,
+                    $providerMessage ? "provider_message: {$providerMessage}" : null,
+                    $excerpt !== '' && $excerpt !== $providerMessage ? "body: {$excerpt}" : null,
+                    $redirectTrail ? 'redirects='.implode(', ', $redirectTrail) : null,
+                ]);
+
+                return $this->fail(
+                    $context,
+                    $startedAt,
+                    'http_error',
+                    'image',
+                    "سرویس استودیو خطای HTTP {$status} برگرداند: {$hint}",
+                    implode(' | ', $detailParts),
+                    $status
+                );
+            }
+
+            break;
         }
 
         $status = $httpResponse->status();
@@ -421,9 +483,7 @@ class ImageStudio
                     );
                 }
                 if (!preg_match('/^https?:\/\//i', $location)) {
-                    $parts = parse_url($currentUrl);
-                    $origin = ($parts['scheme'] ?? 'https').'://'.($parts['host'] ?? '').(isset($parts['port']) ? ':'.$parts['port'] : '');
-                    $location = str_starts_with($location, '/') ? $origin.$location : $origin.'/'.$location;
+                    $location = $this->resolveRelativeUrl($currentUrl, $location);
                 }
                 $currentUrl = $location;
                 continue;
@@ -532,6 +592,14 @@ class ImageStudio
         $path = strtolower(rtrim((string) parse_url(trim($url), PHP_URL_PATH), '/'));
 
         return str_ends_with($path, '/images/generations');
+    }
+
+    private function resolveRelativeUrl(string $baseUrl, string $location): string
+    {
+        $parts = parse_url($baseUrl);
+        $origin = ($parts['scheme'] ?? 'https').'://'.($parts['host'] ?? '').(isset($parts['port']) ? ':'.$parts['port'] : '');
+
+        return str_starts_with($location, '/') ? $origin.$location : $origin.'/'.$location;
     }
 
     private function baseContext(UploadedFile $image, int $presetId, ?array $preset, array $settings, string $requestMode): array

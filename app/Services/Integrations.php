@@ -10,24 +10,31 @@ use Illuminate\Validation\ValidationException;
 
 class Integrations
 {
-    public function endpoint(array $settings, string $name)
+    public function validateUrl(?string $url, string $field): string
     {
-        $url = $settings[$name.'_url'] ?? '';
+        $url = trim((string) $url);
         $parts = parse_url($url);
         if (!is_array($parts) || strtolower($parts['scheme'] ?? '') !== 'https') {
-            throw ValidationException::withMessages([$name.'_url' => 'نشانی سرویس باید با https:// آغاز شود.']);
+            throw ValidationException::withMessages([$field => 'نشانی سرویس باید با https:// آغاز شود.']);
         }
         if (isset($parts['user']) || isset($parts['port']) || isset($parts['pass'])) {
-            throw ValidationException::withMessages([$name.'_url' => 'نشانی سرویس نباید شامل پورت یا نام کاربری در آدرس باشد.']);
+            throw ValidationException::withMessages([$field => 'نشانی سرویس نباید شامل پورت یا نام کاربری در آدرس باشد.']);
         }
         $host = strtolower($parts['host'] ?? '');
         $allowed = config('barin.integrations');
         if ($host === '' || !in_array($host, $allowed, true)) {
             $allowedText = $allowed ? implode(', ', $allowed) : 'تعریف‌نشده';
             throw ValidationException::withMessages([
-                $name.'_url' => "میزبان «{$host}» در فهرست میزبان‌های مجاز (BARIN_INTEGRATION_HOSTS: {$allowedText}) نیست.",
+                $field => "میزبان «{$host}» در فهرست میزبان‌های مجاز (BARIN_INTEGRATION_HOSTS: {$allowedText}) نیست.",
             ]);
         }
+
+        return $url;
+    }
+
+    public function endpoint(array $settings, string $name)
+    {
+        $this->validateUrl($settings[$name.'_url'] ?? '', $name.'_url');
         $request = Http::acceptJson()->timeout($name === 'ai' ? 120 : 8)->connectTimeout(5)->withoutRedirecting();
         return empty($settings[$name.'_token']) ? $request : $request->withToken(Crypt::decryptString($settings[$name.'_token']));
     }

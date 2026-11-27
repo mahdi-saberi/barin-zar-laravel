@@ -440,4 +440,40 @@ class AdminStoreTest extends TestCase
         Http::assertSent(fn (ClientRequest $request) => $request->url() === $finalUrl
             && !$request->hasHeader('Authorization'));
     }
+
+    public function test_studio_handles_api_redirects_safely_and_logs_redirect_location(): void
+    {
+        $this->signIn();
+        Storage::fake('local');
+        config(['barin.integrations' => ['api.gapgpt.ir']]);
+        $initialUrl = 'https://api.gapgpt.ir/v1/images/edits';
+        $redirectedUrl = 'https://api.gapgpt.ir/v1/images/edits/';
+        $unlistedUrl = 'https://other.example.test/v1/images/edits';
+        $output = file_get_contents(public_path('assets/m2.webp'));
+
+        Entry::putData('settings', 'store', [
+            'ai_url' => $initialUrl,
+            'ai_model' => 'gapgpt/qwen-image-2.1',
+            'ai_token' => Crypt::encryptString('gapgpt-token-123'),
+        ]);
+
+        Http::preventStrayRequests()->fake([
+            $initialUrl => Http::sequence()
+                ->push('', 307, ['Location' => $redirectedUrl])
+                ->push('', 307, ['Location' => $unlistedUrl]),
+            $redirectedUrl => Http::response(['data' => [['b64_json' => base64_encode($output)]]], 200),
+        ]);
+
+        $reference = new UploadedFile(public_path('assets/p1.webp'), 'reference.webp', 'image/webp', null, true);
+        $this->postJson('/admin/image', ['preset' => 1, 'image' => $reference])->assertOk();
+
+        $this->postJson('/admin/image', ['preset' => 1, 'image' => $reference])
+            ->assertUnprocessable()
+            ->assertJsonPath('errors.image.0', fn (string $msg) => str_contains($msg, '307') && str_contains($msg, 'other.example.test'));
+
+        $logs = $this->getJson('/admin/studio/logs')->assertOk()->json('logs');
+        $this->assertSame('http_error', $logs[0]['stage']);
+        $this->assertSame(307, $logs[0]['http_status']);
+        $this->assertStringContainsString('other.example.test', $logs[0]['detail']);
+    }
 }
