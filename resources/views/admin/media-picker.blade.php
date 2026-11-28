@@ -55,11 +55,14 @@
                             @foreach(collect($presets)->groupBy('category') as $category => $choices)
                                 <optgroup label="{{ config('barin.categories.'.$category, 'عمومی و مناسبتی') }}">
                                     @foreach($choices as $preset)
-                                        <option value="{{ $preset['id'] }}">{{ $preset['title'] }}</option>
+                                        <option value="{{ $preset['id'] }}" data-prompt="{{ $preset['prompt'] }}">{{ $preset['title'] }}</option>
                                     @endforeach
                                 </optgroup>
                             @endforeach
                         </select>
+                    </label>
+                    <label>پرامپت این تصویر
+                        <textarea data-studio-prompt dir="auto" rows="6" maxlength="8000"></textarea>
                     </label>
                     <p>یک عکس از قطعهٔ طلا انتخاب کنید. پیش‌نمایش خروجی قبل از افزودن به فرم نمایش داده می‌شود.</p>
                     <button class="admin-button" type="button" data-studio-generate>✦ تولید تصویر</button>
