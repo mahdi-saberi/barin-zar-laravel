@@ -435,6 +435,7 @@ class AdminStoreTest extends TestCase
             && $request->hasHeader('Authorization', 'Bearer gapgpt-token-123')
             && $request['model'] === 'gapgpt/qwen-image-2.1'
             && $request['size'] === '1024x1024'
+            && $request['image'] === 'data:image/webp;base64,'.base64_encode(file_get_contents(public_path('assets/p1.webp')))
             && !str_contains($request->header('Content-Type')[0] ?? '', 'multipart/form-data'));
 
         Http::assertSent(fn (ClientRequest $request) => $request->url() === $finalUrl
