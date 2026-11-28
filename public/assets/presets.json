@@ -1,162 +1,260 @@
 [
   {
     "id": 1,
+    "category": "general",
     "title": "بندانگشتی روشن",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Isolate the supplied piece on warm ivory matte paper. Center its complete silhouette in a square with 12% breathing room and soft contact shadow."
-  },
-  {
-    "id": 2,
-    "title": "بندانگشتی تیره",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Center the entire piece on midnight green velvet in a square crop. Use a broad strip reflection to separate the gold from the surface."
-  },
-  {
-    "id": 3,
-    "title": "حلقه از روبه‌رو",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use the supplied front photograph of the ring. Align the face straight to camera on a neutral matte ring stand."
-  },
-  {
-    "id": 4,
-    "title": "حلقه سه‌رخ",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use the matching three-quarter reference. Show the band and face together under a large diffused key light."
-  },
-  {
-    "id": 5,
-    "title": "داخل حلقه",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Crop the supplied interior macro to the documented engraving. Keep every visible mark exactly as photographed."
-  },
-  {
-    "id": 6,
-    "title": "انگشتر روی دست",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Composite the ring onto an adult hand at the base of the finger. Match the supplied inner diameter to the finger and retain natural skin texture."
-  },
-  {
-    "id": 7,
-    "title": "دستبند روی مچ",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the bracelet on an adult wrist in a cream sleeve. Preserve the documented wrist-to-bracelet fit and visible link count."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Isolate the supplied piece on warm ivory matte paper. Center its complete silhouette in a square with 12% breathing room and soft contact shadow. Use a pearl-white paper sweep (#fbfaf7). Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 8,
+    "category": "necklace",
     "title": "گردنبند روی مدل",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Fit the necklace to an adult collarbone above a black boat neckline. Follow the reference chain length and pendant scale."
+    "prompt": "Create a photorealistic Barin Zar jewellery campaign photograph using the uploaded product as the exact reference. Preserve piece count, metal tone, finish, geometry, motifs, links and visible stones. Match supplied dimensions when available. Use a close crop to show detail while keeping realistic proportions on the body. Style an adult Iranian woman with natural olive skin and black or chestnut hair. Frame a chest-up campaign portrait, head turned slightly to the side, glossy waves behind the shoulders and a black V-neck dress. Rest the reference necklace naturally at the collarbone according to its length. Keep its complete drop in sharp focus. Warm amber lamps soften into the background. Include pendants or pearls only when visible in the reference. Natural skin texture. No additional jewellery, text, logos or borders."
   },
   {
-    "id": 9,
-    "title": "گوشواره روی مدل",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use a side crop of an adult ear with hair tucked back. Align the post to the lobe and use the supplied drop measurement."
-  },
-  {
-    "id": 10,
-    "title": "سنجاق روی لباس",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the brooch on a charcoal wool lapel. Match documented dimensions and pin orientation."
+    "id": 33,
+    "category": "necklace",
+    "title": "گردنبند روی کاغذ شیری",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Shoot directly overhead on warm ivory paper. Arrange the visible chain into a relaxed U with the centre detail at six o'clock; keep both strands separate and lay any visible clasp off the centreline. Use a wide soft reflection along the links and leave even margins for a square catalogue cover. Use matte pearl-white stock (#fbfaf7) with soft linen-coloured shadows. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 11,
+    "category": "necklace",
     "title": "آویز در نمای نزدیک",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Frame the pendant face and bail with the reference chain entering from the top. Use soft frontal fill."
-  },
-  {
-    "id": 12,
-    "title": "اتصال زنجیر",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Magnify three adjacent links from the supplied macro. Use even light to show the actual connection."
-  },
-  {
-    "id": 13,
-    "title": "پشت گوشواره",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use the provided rear view. Show the post and backing on neutral paper with a clean side shadow."
-  },
-  {
-    "id": 14,
-    "title": "قفل دستبند",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use the clasp reference in its photographed state; frame the release tab and nearby links tightly."
-  },
-  {
-    "id": 15,
-    "title": "بافت چکش‌کاری",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use grazing side light across the supplied macro of hammered metal. Preserve its actual surface pattern."
-  },
-  {
-    "id": 16,
-    "title": "نگین و پایه",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Crop the stone-setting reference so the actual stone and every visible prong remain sharply legible."
-  },
-  {
-    "id": 17,
-    "title": "نیم‌ست روی مدل",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place only the pieces in the supplied set on one adult model. Compose a three-quarter portrait with the jewellery in focus."
-  },
-  {
-    "id": 18,
-    "title": "ست در جعبه",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Arrange the referenced set in a plain open jewellery case. Maintain actual proportions and separate the pieces."
-  },
-  {
-    "id": 19,
-    "title": "مقایسه اندازه",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the piece alongside the supplied verified scale reference on a flat neutral surface; retain its original markings."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Fill the lower two-thirds with the front of the pendant and include its connection to the chain. Focus across the face and bail together. Feather a strip light from above to trace the outer contour against a matte card. Use a matte slate-blue card (#243448) to separate the pendant outline. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 20,
+    "category": "necklace",
     "title": "پشت آویز",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Use the rear photograph of the pendant. Light recessed features gently and retain its true outline."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Use the supplied rear view of the pendant. Bring out recesses with gentle cross-light, keeping the outline and visible attachment sharp. If only the front is visible, frame that documented surface in the same light. Set the pendant on linen-coloured paper (#f1eee8) with a narrow neutral bounce. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 7,
+    "category": "bracelet",
+    "title": "دستبند روی مچ",
+    "prompt": "Create a photorealistic Barin Zar jewellery campaign photograph using the uploaded product as the exact reference. Preserve piece count, metal tone, finish, geometry, motifs, links and visible stones. Match supplied dimensions when available. Use a close crop to show detail while keeping realistic proportions on the body. Style an adult Iranian woman with natural olive skin and black or chestnut hair. Crop to hands and forearms. Position the bracelet wrist diagonally from lower left to upper right, gently supported from underneath by the other hand. End the charcoal cuff just before the bracelet. Against warm ivory, use soft side light to reveal each link, with the entire visible bracelet in crisp focus. Natural skin texture. No additional jewellery, text, logos or borders."
+  },
+  {
+    "id": 34,
+    "category": "bracelet",
+    "title": "دستبند روی پایهٔ جیر",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Photograph the bracelet around a low, narrow suede roll from slightly above. Keep the front arc in clear view and the support inside its silhouette. Let a long white reflector describe the curvature; leave a soft contact shadow on the matte surface. Use a slate-blue suede roll (#243448) on a linen-coloured surface. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 14,
+    "category": "bracelet",
+    "title": "قفل دستبند",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Crop around the clasp and its neighbouring sections in the orientation shown. Focus on the join, hinge or release if visible; for a clasp-free cuff use its actual end instead. Use oblique soft light against neutral paper to distinguish overlapping edges. Place the clasp on linen-coloured paper (#f1eee8). Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 35,
+    "category": "bracelet",
+    "title": "پرتره با مچ کنار صورت",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Pose an adult woman with her forearm upright beside her cheek, fingers relaxed and wrist clear of her hair. Turn the bracelet's feature towards camera. Place cheek and wrist at similar distance, with sharpest focus on the gold and a quiet background. Cast a beautiful young adult Iranian woman with softly waved chestnut-brown hair, brushed away from her wrist. Use a pearl-white sleeve and a linen backdrop (#f1eee8). Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 9,
+    "category": "earrings",
+    "title": "گوشواره روی مدل",
+    "prompt": "Create a photorealistic Barin Zar jewellery campaign photograph using the uploaded product as the exact reference. Preserve piece count, metal tone, finish, geometry, motifs, links and visible stones. Match supplied dimensions when available. Use a close crop to show detail while keeping realistic proportions on the body. Style an adult Iranian woman with natural olive skin and black or chestnut hair. Frame one ear, a sliver of cheek, jaw and neck. Keep eyes outside the frame and hair behind the ear. Show one reference earring worn through the lobe with its actual fastening. Let any drop hang freely, leaving margin below its tip. Keep the entire piece sharp against softly blurred ivory with a hint of charcoal fabric. Natural skin texture. No additional jewellery, text, logos or borders."
+  },
+  {
+    "id": 36,
+    "category": "earrings",
+    "title": "گوشواره روی کارت مات",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Arrange exactly the supplied earring or pair on a matte slate card. For a pair keep their actual handedness, space them one earring-width apart and align attachment points. Shoot straight on with a broad overhead light and a narrow fill at the tips. Use a matte slate-blue mounting card (#243448). Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 13,
+    "category": "earrings",
+    "title": "پشت گوشواره",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Use the photographed back or fastening as the focal point on light matte paper. Place a black flag outside the frame to separate the thin edges of the fitting. When the reverse is unseen, retain the supplied angle and crop to the visible attachment. Use pearl-white paper (#fbfaf7) beneath the fitting. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 37,
+    "category": "earrings",
+    "title": "گوشواره در نور عصر",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Use a close side portrait of an adult woman looking towards a window. Draw the hair back and let a softly lit wall fill the background. Use warm edge light on hair and neutral fill across the earring to keep the metal colour accurate. Cast a beautiful young adult Iranian woman with black hair swept up to reveal the near ear. Use a slate-blue wall (#243448) softened by evening daylight. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 3,
+    "category": "ring",
+    "title": "حلقه از روبه‌رو",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Set the ring upright in a discreet slit in matte paper. Bring the camera square to the face, show the whole band visible in the source and centre the setting. Use two broad white reflections separated by a narrow dark edge so polished gold retains its shape. Choose pearl-white stock (#fbfaf7) and soft linen-grey shadows. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 4,
+    "category": "ring",
+    "title": "حلقه سه‌رخ",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Compose a three-quarter catalogue view using the angle nearest the source. Show the transition from shoulder to face in continuous focus. Angle a soft strip across the band and retain a fine grounding shadow; keep any unseen underside outside the frame. Place the ring against a slate-blue sweep (#243448). Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 5,
+    "category": "ring",
+    "title": "داخل حلقه",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Frame the inner arc and any visible engraving against a light neutral background. Light along the curvature so the marks are readable at their real depth. If there is no visible inscription, photograph the plain inner surface as supplied. Use a linen ground (#f1eee8) and a small white bounce inside the band. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 6,
+    "category": "ring",
+    "title": "انگشتر روی دست",
+    "prompt": "Create a photorealistic Barin Zar jewellery campaign photograph using the uploaded product as the exact reference. Preserve piece count, metal tone, finish, geometry, motifs, links and visible stones. Match supplied dimensions when available. Use a close crop to show detail while keeping realistic proportions on the body. Style an adult Iranian woman with natural olive skin and black or chestnut hair. Photograph relaxed hands near the cheek. Place the ring-bearing hand closer to the camera, with the ring naturally fitted to one finger and its face turned toward the lens. Focus on the entire ring; let the face fall softly out of focus. Use a matte charcoal cuff and a warm ivory interior. Natural skin texture. No additional jewellery, text, logos or borders."
+  },
+  {
+    "id": 17,
+    "category": "set",
+    "title": "نیم‌ست روی مدل",
+    "prompt": "Create a photorealistic Barin Zar jewellery campaign photograph using the uploaded product as the exact reference. Preserve piece count, metal tone, finish, geometry, motifs, links and visible stones. Match supplied dimensions when available. Use a close crop to show detail while keeping realistic proportions on the body. Style an adult Iranian woman with natural olive skin and black or chestnut hair. Inventory the supplied half-set by piece type. A matching bracelet displayed above a necklace on the same bust belongs on the wrist. Place the necklace in its actual configuration around the neck. Include earrings only when supplied. Show a chest-up portrait in a black V-neck with softly blurred amber lamps. For a bracelet, rest the hand lightly on the opposite shoulder, wrist beside the collarbone. For earrings, tuck hair behind the ears. Keep every supplied piece clearly visible at a natural scale. Natural skin texture. No additional jewellery, text, logos or borders."
+  },
+  {
+    "id": 18,
+    "category": "set",
+    "title": "ست در جعبه",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Place the supplied set in an open unbranded case with a soft lining. Give each piece its own recess or clear resting area. Photograph from slightly above with a large diffused key; keep every silhouette readable against the lining. Use a midnight navy case (#142231) with pearl-white lining (#fbfaf7). Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 38,
+    "category": "set",
+    "title": "چیدمان تخت سرویس",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Shoot overhead on matte ivory board. Anchor the composition with the largest piece and arrange the other supplied components around it with consistent gaps. Preserve original pairings and proportions. Use one soft directional shadow across the entire arrangement. Use a pearl-white mounting board (#fbfaf7). Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 39,
+    "category": "set",
+    "title": "جزئیات نقش مشترک سرویس",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Bring the visible components close together on velvet, leaving a sliver of separation between outlines. Frame their related details at the same scale and angle to the light. Use a soft lateral reflection to reveal workmanship while keeping the original differences between pieces. Use midnight navy velvet (#142231) to separate the pieces. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 40,
+    "category": "anklet",
+    "title": "پابند روی مچ پا",
+    "prompt": "Create a photorealistic Barin Zar jewellery campaign photograph using the uploaded product as the exact reference. Preserve piece count, metal tone, finish, geometry, motifs, links and visible stones. Match supplied dimensions when available. Use a close crop to show detail while keeping realistic proportions on the body. Style an adult Iranian woman with natural olive skin and black or chestnut hair. Frame the outer ankle from lower calf to foot arch, foot resting naturally on warm ivory stone. A matte charcoal trouser hem ends just above the anklet. Let its strands follow the ankle with slight slack and any charms hang freely. Keep all visible details in focus with soft side light and natural contact shadows. Natural skin texture. No additional jewellery, text, logos or borders."
+  },
+  {
+    "id": 41,
+    "category": "anklet",
+    "title": "پابند روی کتان روشن",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Lay the anklet in a shallow oval on tightly woven linen. Move visible dangling details to the outer edge of the curve without changing their spacing. Shoot overhead with a soft cross-light and include the full referenced silhouette. Use fine natural linen (#f1eee8) under the chain. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 42,
+    "category": "anklet",
+    "title": "کلوزآپ بافت پابند",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Follow a short run of the chain along a diagonal on matte paper. Centre the most distinctive visible detail, whether a charm, link or bead. Keep neighbouring links sharp enough to show how it attaches. Use a narrow soft reflection along the edge. Use matte midnight navy paper (#142231) beneath the fine links. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 43,
+    "category": "anklet",
+    "title": "پابند با استایل تابستانی",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Frame an adult model's foot on a low limestone step in open shade. Keep a light trouser hem above the ankle, the near foot planted and the far foot out of focus. Angle the ankle towards camera so the defining detail remains visible against skin. Cast a beautiful young adult Iranian woman with chestnut-brown hair. Keep the low foot-level composition; use slate-blue trousers (#243448) and pale linen-coloured limestone. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 2,
+    "category": "general",
+    "title": "بندانگشتی تیره",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Center the entire piece on velvet in a square crop. Use a broad strip reflection to separate the gold from the surface. Use midnight navy velvet (#142231) for the dark cover. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 10,
+    "category": "general",
+    "title": "سنجاق روی لباس",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Place the brooch on a wool lapel. Match documented dimensions and pin orientation. Use midnight navy wool (#142231) with a soft neutral fill. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 12,
+    "category": "general",
+    "title": "اتصال زنجیر",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Magnify three adjacent links from the supplied macro. Use even light to show the actual connection. Use pearl-white paper (#fbfaf7) under the chain. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 15,
+    "category": "general",
+    "title": "بافت چکش‌کاری",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Use grazing side light across the supplied macro of hammered metal. Preserve its actual surface pattern. Use a midnight navy background (#142231) behind the metal. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 16,
+    "category": "general",
+    "title": "نگین و پایه",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Crop the stone-setting reference so the actual stone and every visible prong remain sharply legible. Frame the setting against matte slate blue (#243448); keep stone colour true. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
+  },
+  {
+    "id": 19,
+    "category": "general",
+    "title": "مقایسه اندازه",
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Place the piece alongside the supplied verified scale reference on a flat neutral surface; retain its original markings. Use a pearl-white ground (#fbfaf7) under the original scale reference. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 21,
+    "category": "general",
     "title": "روی ابریشم",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Lay the piece across one soft fold of ivory silk with the metal clear of the deepest crease."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Lay the piece across one soft fold of ivory silk with the metal clear of the deepest crease. Choose pearl-white silk (#fbfaf7) and softly shaded linen folds. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 22,
+    "category": "general",
     "title": "روی سنگ",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the piece on pale travertine with calm lateral daylight and a restrained shadow."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Place the piece on pale travertine with calm lateral daylight and a restrained shadow. Choose limestone-toned travertine close to the site's linen (#f1eee8). Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 23,
+    "category": "general",
     "title": "روی چوب گردو",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the piece on dark walnut with subtle grain running perpendicular to the chain."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Place the piece on dark walnut with subtle grain running perpendicular to the chain. Place the walnut sample on a linen sweep (#f1eee8), visible beyond one edge. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 24,
+    "category": "general",
     "title": "هدیه روز مادر",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Compose the supplied piece in an open gift box with an out-of-focus rose at the edge. Leave clear space on the left for campaign text."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Compose the supplied piece in an open gift box with an out-of-focus rose at the edge. Leave clear space on the left for campaign text. Use a slate-blue case (#243448), pearl lining and a single ivory rose. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 25,
+    "category": "general",
     "title": "روز زن",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Show the piece worn by an adult woman in a tailored emerald jacket. Keep the crop on the jewellery with soft window light."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Show the piece worn by an adult woman in a tailored jacket. Keep the crop on the jewellery with soft window light. Cast a beautiful young adult Iranian woman with softly waved chestnut-brown hair tucked behind one ear. Use a tailored slate-blue jacket (#243448) and pearl-white background. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 26,
+    "category": "general",
     "title": "جمعه سیاه",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Compose the piece on black satin under one broad rim light; leave a clean empty area for the offer."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Compose the piece on satin under one broad rim light; leave a clean empty area for the offer. Use midnight navy satin (#142231) with a single muted champagne ribbon at the far edge. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 27,
+    "category": "general",
     "title": "نوروز",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the piece on warm linen with blurred hyacinth in the far background and soft spring daylight."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Place the piece on warm linen with blurred hyacinth in the far background and soft spring daylight. Use linen (#f1eee8), pale hyacinth and a blurred slate-blue ceramic vase. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 28,
+    "category": "general",
     "title": "شب یلدا",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the jewellery in front of deep burgundy velvet with a distant blurred pomegranate accent."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Place the jewellery in front of velvet with a distant blurred pomegranate accent. Use midnight navy velvet (#142231); let the pomegranate provide a small seasonal red accent. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 29,
+    "category": "general",
     "title": "سالگرد",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Place the supplied piece in an open cream box beside an unmarked envelope. Use warm evening light."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Place the supplied piece in an open cream box beside an unmarked envelope. Use warm evening light. Use a pearl-white box (#fbfaf7) and slate-blue envelope. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 30,
+    "category": "general",
     "title": "هدیه تولد",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Compose the piece on pale blue wrapping paper with a loose ribbon at the frame edge."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Compose the piece on wrapping paper with a loose ribbon at the frame edge. Use pearl-white wrapping paper (#fbfaf7) and a narrow champagne-gold ribbon (#e6c694). Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 31,
+    "category": "general",
     "title": "استایل روزمره",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Show the piece on an adult model in a plain white shirt in indirect daylight. Crop close enough to read its shape."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Show the piece on an adult model in a plain white shirt in indirect daylight. Crop close enough to read its shape. Cast a beautiful young adult Iranian woman with loose black hair tucked away from the piece. Use a pearl-white shirt (#fbfaf7) and soft slate-blue background. Include her relaxed expression when the jewellery is near the face. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   },
   {
     "id": 32,
+    "category": "general",
     "title": "استایل رسمی",
-    "prompt": "Use the uploaded product image as the identity reference. Preserve geometry, colour, stones, hallmarks, dimensions and proportions. No added jewellery, text, logos or watermark. Use only supplied angles and verified dimensions. If a required view or measurement is missing, request it before generation. Show the piece with an adult model wearing a plain dark evening outfit. Use subtle studio lighting and a tight editorial crop."
+    "prompt": "Edit the supplied product photograph. Preserve the exact metal tone, finish, silhouette, proportions, and the number, colour and placement of visible stones or motifs. Change only the scene, lighting and placement. Keep undocumented details out of view. Produce a photorealistic square photograph with controlled highlights, no extra jewellery, lettering added to the scene, or watermark. Show the piece with an adult model wearing a plain dark evening outfit. Use subtle studio lighting and a tight editorial crop. Cast a beautiful young adult Iranian woman with chestnut-brown hair in a low chignon. Use a midnight navy evening outfit (#142231) against slate blue. Where framing permits, include her face in three-quarter view. Keep the lighting neutral on the jewellery so the backdrop does not tint its metal or stones."
   }
 ]

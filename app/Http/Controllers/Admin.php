@@ -542,10 +542,10 @@ class Admin extends Controller
     {
         $this->authorizeAdmin('content');
         $data = $request->validate(
-            ['preset' => 'required|integer', 'image' => ImageStudio::IMAGE_RULE],
+            ['preset' => 'required|integer', 'prompt' => 'sometimes|required|string|max:8000', 'image' => ImageStudio::IMAGE_RULE],
             ImageStudio::IMAGE_MESSAGES + ['preset.required' => 'یک طرح عکاسی انتخاب کنید.', 'preset.integer' => 'شناسهٔ طرح عکاسی معتبر نیست.']
         );
-        $path = $this->studio->generate($data['image'], (int) $data['preset']);
+        $path = $this->studio->generate($data['image'], (int) $data['preset'], prompt: $data['prompt'] ?? null);
         if ($request->expectsJson()) {
             $file = basename($path);
 
@@ -621,6 +621,7 @@ class Admin extends Controller
         $data = $request->validate([
             'kind' => 'sometimes|required|in:image,video',
             $field => $video ? Media::VIDEO_RULE : ImageStudio::IMAGE_RULE,
+            'prompt' => $video ? 'prohibited' : 'sometimes|required|string|max:8000',
             'preset' => $video ? 'prohibited' : 'sometimes|required|integer',
         ], ImageStudio::IMAGE_MESSAGES + [
             'file.mimetypes' => 'ویدئو باید MP4 یا WebM باشد.',
@@ -629,7 +630,7 @@ class Admin extends Controller
         $generated = isset($data['preset']);
         $file = $data[$field];
         if ($generated) {
-            $path = $this->studio->generate($file, (int) $data['preset'], forCatalog: true);
+            $path = $this->studio->generate($file, (int) $data['preset'], forCatalog: true, prompt: $data['prompt'] ?? null);
         } else {
             $label = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
             $label = rtrim(substr($label, 0, 60), '-') ?: ($video ? 'video' : 'photo');

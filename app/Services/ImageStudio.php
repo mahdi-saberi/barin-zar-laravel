@@ -112,7 +112,7 @@ class ImageStudio
         ];
     }
 
-    public function generate(UploadedFile $image, int $presetId, bool $forCatalog = false): string
+    public function generate(UploadedFile $image, int $presetId, bool $forCatalog = false, ?string $prompt = null): string
     {
         $startedAt = hrtime(true);
         $settings = $this->settings();
@@ -168,7 +168,7 @@ class ImageStudio
 
         $payloadData = [
             'model' => $settings['ai_model'],
-            'prompt' => $preset['prompt'],
+            'prompt' => $prompt ?? $preset['prompt'],
             'size' => '1024x1024',
         ];
         $currentUrl = trim((string) $settings['ai_url']);

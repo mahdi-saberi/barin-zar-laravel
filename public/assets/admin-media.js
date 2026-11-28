@@ -85,7 +85,7 @@
     function setBusy(value) {
         busy = value;
         dialog.setAttribute('aria-busy', String(value));
-        for (const node of dialog.querySelectorAll('[data-picker-close], [data-picker-tab], [data-picker-choose], [data-reference-choose], [data-upload-preset], [data-queue-studio], .media-queue button')) {
+        for (const node of dialog.querySelectorAll('[data-picker-close], [data-picker-tab], [data-picker-choose], [data-reference-choose], [data-upload-preset], [data-studio-prompt], [data-queue-studio], .media-queue button')) {
             node.disabled = value;
         }
         updatePicker();
@@ -221,6 +221,10 @@
         updatePicker();
     }
 
+    function loadPresetPrompt() {
+        get('studio-prompt').value = get('upload-preset').selectedOptions[0]?.dataset.prompt || '';
+    }
+
     function open(options) {
         if (dialog.open) return;
         context = options;
@@ -233,6 +237,7 @@
         get('picker-title').textContent = options.library ? 'کتابخانهٔ رسانه' : (options.replace ? 'ویرایش رسانه' : 'افزودن رسانه');
         get('picker-context').textContent = options.title;
         get('upload-preset').selectedIndex = 0;
+        loadPresetPrompt();
         fileInput.multiple = options.limit > 1;
         altInput.value = options.alt || '';
         renderQueue();
@@ -396,7 +401,10 @@
         body.set('_token', dialog.dataset.token);
         body.set('kind', type);
         body.set(type === 'video' ? 'file' : 'image', file);
-        if (preset) body.set('preset', preset);
+        if (preset) {
+            body.set('preset', preset);
+            body.set('prompt', get('studio-prompt').value.trim());
+        }
         const response = await fetch(preset ? dialog.dataset.generate : dialog.dataset.upload, {
             method: 'POST', body, headers: { Accept: 'application/json' },
         });
@@ -407,6 +415,11 @@
 
     async function generate() {
         if (busy || !reference) return;
+        if (!get('studio-prompt').value.trim()) {
+            status('پرامپت تصویر را وارد کنید.', true);
+            get('studio-prompt').focus();
+            return;
+        }
         setBusy(true);
         showStudioLog();
         status('استودیو در حال تولید تصویر است…');
@@ -531,6 +544,7 @@
         setTab('studio');
         get('upload-preset').focus();
     });
+    get('upload-preset').addEventListener('change', loadPresetPrompt);
     get('studio-generate').addEventListener('click', generate);
     search.addEventListener('submit', event => {
         event.preventDefault();
