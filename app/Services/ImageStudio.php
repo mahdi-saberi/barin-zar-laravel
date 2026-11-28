@@ -195,11 +195,20 @@ class ImageStudio
                 }
             }
 
+            if ($requestMode === 'json-generations' && !isset($payloadData['image'])) {
+                $referenceBytes = file_get_contents($image->path());
+                if ($referenceBytes === false || $referenceBytes === '') {
+                    return $this->fail($context, $startedAt, 'storage', 'image',
+                        'خواندن تصویر مرجع ناموفق بود.', 'Unable to read reference image.');
+                }
+                $payloadData['image'] = 'data:'.$image->getMimeType().';base64,'.base64_encode($referenceBytes);
+            }
+
             try {
                 $client = $hop === 0 ? $endpoint : $this->integrations->endpoint(['ai_url' => $currentUrl] + $settings, 'ai');
                 $httpResponse = ($requestMode === 'json-generations'
                     ? $client->asJson()->post($currentUrl, $payloadData)
-                    : $client->attach('image', $stream, 'product.'.$image->extension())->post($currentUrl, $payloadData)
+                    : $client->attach('image', $stream, 'product.'.$image->extension())->post($currentUrl, array_diff_key($payloadData, ['image' => true]))
                 );
             } catch (ConnectionException $error) {
                 $reason = $this->sanitizeText($error->getMessage(), 350);
@@ -730,6 +739,7 @@ class ImageStudio
 
     private function sanitizeText(string $text, int $limit = 350): string
     {
+        $text = preg_replace('~data:image/[^;,\s]+;base64,[A-Za-z0-9+/=]+~i', '[reference image redacted]', $text) ?? $text;
         $clean = preg_replace('/(Bearer\s+)[A-Za-z0-9._\-]+/i', '$1***', $text) ?? $text;
         $clean = preg_replace('/\b(sk-[A-Za-z0-9_-]{6,})\b/', 'sk-***', $clean) ?? $clean;
         $clean = preg_replace('/[^\P{C}\n\t]+/u', ' ', $clean) ?? $clean;
