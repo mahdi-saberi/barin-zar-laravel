@@ -52,8 +52,12 @@
                 <div class="media-studio-controls">
                     <label>طرح تصویرسازی
                         <select data-upload-preset>
-                            @foreach($presets as $preset)
-                                <option value="{{ $preset['id'] }}">{{ $preset['title'] }}</option>
+                            @foreach(collect($presets)->groupBy('category') as $category => $choices)
+                                <optgroup label="{{ config('barin.categories.'.$category, 'عمومی و مناسبتی') }}">
+                                    @foreach($choices as $preset)
+                                        <option value="{{ $preset['id'] }}">{{ $preset['title'] }}</option>
+                                    @endforeach
+                                </optgroup>
                             @endforeach
                         </select>
                     </label>
